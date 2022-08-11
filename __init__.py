@@ -58,6 +58,7 @@ dataClasses = {
   2: DataProperty.UVBakeImageConfig,
   3: DataProperty.BakeExtendTemplateData,
   4: DataProperty.UVTextureOutPutConfig,
+  5: DataProperty.SystemData
 
 
 
