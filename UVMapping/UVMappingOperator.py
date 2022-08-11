@@ -163,7 +163,8 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       from .import base
     
       ti.init(arch=ti.gpu)  
-      floatingInterval : ti.uint16 = context.scene.uv_texture_System_config.floatingInterval
+
+      floatingInterval : int = context.scene.uv_texture_System_config.floatingInterval
       
       base.setFloatingInterval(floatingInterval) 
 
@@ -171,13 +172,13 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       spArr : np.ndarray = np.array(object= np.split(ary= datanpArr,indices_or_sections= 3,axis=1),dtype=np.float32)
       #  shape (3,4,n)
 
-      materix : ti.Matrix = ti.Matrix.field(n= 3,m=4,dtype= ti.float32,shape=(n,1))
+      materix : ti.Matrix = ti.Matrix.field(n= 4,m=3,dtype= ti.float32,shape=(n,1))
       # [  [[00,10,20,    [[00,10,20,
       #      01,11,21,      01,11,21,
       #      02,12,22,      02,12,22, .....
       #      03,13,23]],    03,13,23]],          ]
 
-      temNDa : ti.MatrixNdarray = ti.MatrixNdarray(n=3 ,m= 4,dtype=ti.f32,shape=(n,1))
+      temNDa : ti.MatrixNdarray = ti.MatrixNdarray(n=4 ,m= 3,dtype=ti.f32,shape=(n,1))
       temNDa.from_numpy(arr=spArr)
       
       @ti.kernel
@@ -196,10 +197,19 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
       base.fillSamples()
 
+      
+      points = ti.Matrix.field(n= 3,m= 1,dtype= ti.f32,shape=(sampleNums,1))
 
+      @ti.kernel
+      def RandPoints():
+          for ind in ti.grouped(points):
+              base.samples[ind] 
+              base.reRandPoint()
+              #points[ind] = 
+              # get all random points to get normal
 
-
-
+  
+       
 
 
 

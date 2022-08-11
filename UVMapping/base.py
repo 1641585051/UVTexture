@@ -7,14 +7,14 @@ samples : ti.Matrix = None
 
 @ti.kernel
 def reRandSamplesMaterixInstance(sampleNums : ti.uint16):
-   samples = ti.Matrix.field(n= 1,m= 2,dtype=ti.f32,shape=(sampleNums,1))
+   samples = ti.Matrix.field(n= 2,m= 1,dtype=ti.f32,shape=(sampleNums,1))
 
 
-floatingInterval : ti.uint16 = 1024
+floatingInterval : int = 1024
 
 
 @ti.kernel
-def setFloatingInterval(value : ti.uint16):
+def setFloatingInterval(value : int):
    if floatingInterval != 1024:
        floatingInterval = value
 
@@ -23,21 +23,21 @@ def setFloatingInterval(value : ti.uint16):
 @ti.kernel
 def fillSamples():
    for ind in ti.grouped(samples):
+       
        asix = ti.random(dtype=ti.f32) * ti.f32(floatingInterval / 65535)
        samples[ind][0,0] = ti.random(dtype= ti.f32)
-       if samples[ind][0,0] > 0.50:
-          samples[ind][0,1] = 0.50 - (samples[ind][0,0] - 0.50)
-          samples[ind][0,1] = ti.random(dtype= ti.f32)
+       samples[ind][0,1] = 1 - samples[ind][0,0] - asix
+      
 
       
-    
+   
 
 
 
 
 @ti.func
-def reRandPoint(point0 : ti.Matrix,point1 : ti.Matrix,point2: ti.Matrix,u : ti.f32,v :ti.f32) -> ti.Matrix:
-      '''point shape = (3,1)
+def reRandPoint(point0 : ti.Matrix,point1 : ti.Matrix,point2: ti.Matrix,u ,v) -> ti.Matrix:
+      '''point shape = (3,1) , u and v is float32 
          Trigono metric parameter equations
          "p = v * b + u * c + (1 - v - u) * a"
          

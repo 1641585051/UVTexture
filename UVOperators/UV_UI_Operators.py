@@ -15,10 +15,10 @@ class UITree_OT_createItem(bpy.types.Operator):
         index : int = scene.uv_texture_list.find(item)
            
         config = scene.uv_bake_image_config.add()
-        config.width = scene.uv_texture_output_config[scene.uv_texture_output_config.keys().count() - 1].textureSideLength
-        config.height = scene.uv_texture_output_config[scene.uv_texture_output_config.keys().count() - 1].textureSideLength
+        config.width = scene.uv_texture_output_config[list(scene.uv_texture_output_config.keys()).count() - 1].textureSideLength
+        config.height = scene.uv_texture_output_config[list(scene.uv_texture_output_config.keys()).count() - 1].textureSideLength
         config.color = (0.0,0.0,0.0)
-        config.float32 = scene.uv_texture_output_config[scene.uv_texture_output_config.keys().count() - 1].float32 
+        config.float32 = scene.uv_texture_output_config[list(scene.uv_texture_output_config.keys()).count() - 1].float32 
 
         item.active = True
         item.layerName = 'layer_' + index
