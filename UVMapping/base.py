@@ -1,44 +1,51 @@
 import bpy
-import bmesh as mesh
-import mathutils
-
-def singularFaceJudgment(face : mesh.bmesh.types.BMFace):
-    '''if face have point not in face return true'''
-
-    verts = face.verts
-    count = verts.count()
-    if count > 4:
-       return True
-    elif count == 4 :
-       v0 = verts[0].co
-       v1 = verts[1].co
-       v2 = verts[2].co 
-       v3 = verts[3].co
- 
-       t0 : mathutils.Vector = v1 - v0 
-       t0.normalize()
-
-       t1 : mathutils.Vector = v2 - v1
-       t1.normalize()
-
-       t2 : mathutils.Vector = v3 - v2
-       t2.normalize()
-
-       t3 : mathutils.Vector = v0 - v3
-       t3.normalize()
-
-       if ((t0.cross(t1) == t1.cross(t2) or t0.cross(t1) + t1.cross(t2) == 0) and
-           (t1.cross(t2) == t2.cross(t3) or t1.cross(t2) + t2.cross(t3) == 0) and
-           (t2.cross(t3) == t3.cross(t0) or t2.cross(t3) + t3.cross(t0) == 0) and
-           (t3.cross(t0) == t0.cross(t1) or t3.cross(t0) + t0.cross(t3) == 0)
-          ):
-          return False
-       else:
-          return True    
+from .. import taichi as ti
 
 
-    elif count == 3:
-        return False
+samples : ti.Matrix = None
+''' shape = (1,2) * sampleNums '''
+
+@ti.kernel
+def reRandSamplesMaterixInstance(sampleNums : ti.uint16):
+   samples = ti.Matrix.field(n= 1,m= 2,dtype=ti.f32,shape=(sampleNums,1))
+
+
+floatingInterval : ti.uint16 = 1024
+
+
+@ti.kernel
+def setFloatingInterval(value : ti.uint16):
+   if floatingInterval != 1024:
+       floatingInterval = value
 
 
 
+@ti.kernel
+def fillSamples():
+   for ind in ti.grouped(samples):
+       asix = ti.random(dtype=ti.f32) * ti.f32(floatingInterval / 65535)
+       samples[ind][0,0] = ti.random(dtype= ti.f32)
+       if samples[ind][0,0] > 0.50:
+          samples[ind][0,1] = 0.50 - (samples[ind][0,0] - 0.50)
+          samples[ind][0,1] = ti.random(dtype= ti.f32)
+
+      
+    
+
+
+
+
+@ti.func
+def reRandPoint(point0 : ti.Matrix,point1 : ti.Matrix,point2: ti.Matrix,u : ti.f32,v :ti.f32) -> ti.Matrix:
+      '''point shape = (3,1)
+         Trigono metric parameter equations
+         "p = v * b + u * c + (1 - v - u) * a"
+         
+         
+         use point0(a) as root : 
+         point1(b) use v
+         point2(c) use u 
+         p is result
+       
+      '''
+      return point1 * v + point2 * u + (1 - u - v) * point0

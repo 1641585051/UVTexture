@@ -1,4 +1,5 @@
 from this import d
+from unicodedata import name
 import bpy
 from bpy.types import Struct
 
@@ -34,10 +35,21 @@ class UVTextureOutPutConfig(bpy.types.PropertyGroup):
         name='backgroundObjectName',
         description="uvTexture base object (backgroung obj)",
         default=defaultBakegroundObjName,
-        maxlen=128,
+        maxlen=128
          
 
-        )    
+        )
+
+
+    mappingSampleNums = bpy.props.IntProperty(
+
+        name='mappingSampleNums',
+        description="uv Mapping sample Nums (to Determine the mapping location)",
+        default= 128,
+        min=64,
+        max=1024
+
+    )        
 
 
 
@@ -177,16 +189,43 @@ class UVTree_list_item(bpy.types.PropertyGroup):
         super().bl_rna_get_subclass_py(cls,id,default)
 
  
+class SystemData(bpy.types.PropertyGroup):
+    ''' system data set '''
+
+    floatingInterval = bpy.props.IntProperty(
+
+      name='floatingInterval',
+      description= 'render floatingInterval',
+      default= 2048,
+      min=1024,
+      max=16384,
+
+
+    )
+
+
+    @classmethod
+    def bl_rna_get_subclass(cls, id: str, default=None) -> Struct:
+        return super().bl_rna_get_subclass(cls,id,default)
+
+
+    @classmethod
+    def bl_rna_get_subclass_py(cls, id: str, default=None):
+        super().bl_rna_get_subclass_py(cls,id,default)
+
+
 
 def UVTextureProperties():
 
+    # draw in
     bpy.types.Scene.uv_texture_list = bpy.props.CollectionProperty(
 
         type=UVTree_list_item,
         name="uv_texture_list",
         description= "uv texture main data list"
 
-    )
+        )
+    '''this datq need bind UI : draw in class(UVTexture_UL_List_uv_tree) from templateList func item'''  
 
 
     bpy.types.Scene.uv_texture_list_index = bpy.props.IntProperty(
@@ -196,6 +235,8 @@ def UVTextureProperties():
         min= 0
 
         )
+    '''this datq need bind UI :  ''' 
+
 
     bpy.types.Scene.uv_bake_image_config = bpy.props.CollectionProperty(
 
@@ -204,6 +245,7 @@ def UVTextureProperties():
         description= "uv_texture base config of bake image " 
       
         )
+    '''this datq need bind UI :  '''     
 
 
     bpy.types.Scene.bake_extend_template_data = bpy.props.CollectionProperty(
@@ -214,6 +256,7 @@ def UVTextureProperties():
 
 
         )    
+    '''this datq need bind UI :  '''    
 
 
     bpy.types.Scene.uv_texture_output_config = bpy.props.CollectionProperty(
@@ -224,3 +267,13 @@ def UVTextureProperties():
         
 
         )    
+    '''this datq need bind UI : '''
+
+    bpy.types.Scene.uv_texture_System_config = bpy.props.PointerProperty(
+
+         type=SystemData,
+         name='uv_texture_System_config',
+         description= "UVTexture system config"
+
+        )
+    '''this datq need bind UI :  '''

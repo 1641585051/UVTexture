@@ -36,6 +36,8 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
     def execute(self, context):
 
+      sampleNums = context.scene.uv_texture_output_config[list(context.scene.uv_texture_output_config.keys()).count() - 1].mappingSampleNums 
+
       from ..tools import gpuEnv
       
       datanpArr : np.ndarray = None
@@ -94,7 +96,6 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
             for xten in xlist:
               # xTen shape = (3,m)
               
-            
               ten.exp2(x= xten,out= xten)
               xten.execute()
               disTen : ten.Tensor = ten.zeros(shape=(1,m),dtype=np.float32,gpu=True) 
@@ -159,8 +160,12 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
       from .. import taichi as ti
       from .. taichi import types
-      
+      from .import base
+    
       ti.init(arch=ti.gpu)  
+      floatingInterval : ti.uint16 = context.scene.uv_texture_System_config.floatingInterval
+      
+      base.setFloatingInterval(floatingInterval) 
 
       
       spArr : np.ndarray = np.array(object= np.split(ary= datanpArr,indices_or_sections= 3,axis=1),dtype=np.float32)
@@ -185,6 +190,19 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
       fullMaterix()
 
+      
+
+      base.reRandSamplesMaterixInstance(sampleNums= sampleNums)
+
+      base.fillSamples()
+
+
+
+
+
+
+
+
       @ti.kernel
       def NormalRayCapture():
           for ind in ti.grouped(materix):
@@ -194,7 +212,7 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
               back_point0 = ti.Vector([materix[ind][0,1],materix[ind][1,1],materix[ind][2,1]])
               back_point1 = ti.Vector([materix[ind][0,2],materix[ind][1,2],materix[ind][2,2]])
               back_point3 = ti.Vector([materix[ind][0,3],materix[ind][1,3],materix[ind][2,3]])
-                  
+                   
               
 
         
