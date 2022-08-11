@@ -160,9 +160,7 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
       from .. import taichi as ti
       from .. taichi import types
-      from .import base
-    
-      ti.init(arch=ti.gpu)  
+      from .import base  
 
       floatingInterval : int = context.scene.uv_texture_System_config.floatingInterval
       
@@ -191,37 +189,69 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
       fullMaterix()
 
-      
-
+    
       base.reRandSamplesMaterixInstance(sampleNums= sampleNums)
 
       base.fillSamples()
 
-      
-      points = ti.Matrix.field(n= 3,m= 1,dtype= ti.f32,shape=(sampleNums,1))
+      points = ti.Matrix.field(n= 3,m= 1,dtype= ti.f32,shape=(n,sampleNums))
+      # [[0,0], ..... n
+      #  [1,0],
+      #  [2,0]],
+      #  .
+      #  .
+      #  .
+      #  sampleNums
 
       @ti.kernel
       def RandPoints():
-          for ind in ti.grouped(points):
-              base.samples[ind] 
-              base.reRandPoint()
-              #points[ind] = 
-              # get all random points to get normal
+          for ind in ti.grouped(materix):
+              # ind [0,0] / [1,0] ...
+              back_point0 = ti.Vector([[materix[ind][0,1]],
+                                       [materix[ind][1,1]],
+                                       [materix[ind][2,1]]])
+              back_point1 = ti.Vector([[materix[ind][0,2]],
+                                       [materix[ind][1,2]],
+                                       [materix[ind][2,2]]])
+              back_point2 = ti.Vector([[materix[ind][0,3]],
+                                       [materix[ind][1,3]],
+                                       [materix[ind][2,3]]])
 
-  
+              # point shape  (1,3) n =3 m=1                          
+                   
+              for ind1 in ti.grouped(points):
+                 if ind1[0] == ind[0]: # materix[n] and points[n]
+                    
+                    uv = base.samples[0,ind1[1]] 
+                    # uv is not blender uv ,that is Trigono metric parameter equations uv parmeters
+                    # (1,2)
+                    points[ind1] = base.reRandPoint(
+                                point0= back_point0,
+                                point1= back_point1,
+                                point2= back_point2,
+                                u= uv[0,0],
+                                v= uv[1,0]
+
+                                )
+                  
+                  # get all random points to get normal
+
+      RandPoints()
        
 
+
+      
 
 
       @ti.kernel
       def NormalRayCapture():
           for ind in ti.grouped(materix):
 
-              data = materix[ind]
+              
               mesh_point = ti.Vector([materix[ind][0,0],materix[ind][1,0],materix[ind][2,0]])
               back_point0 = ti.Vector([materix[ind][0,1],materix[ind][1,1],materix[ind][2,1]])
               back_point1 = ti.Vector([materix[ind][0,2],materix[ind][1,2],materix[ind][2,2]])
-              back_point3 = ti.Vector([materix[ind][0,3],materix[ind][1,3],materix[ind][2,3]])
+              back_point2 = ti.Vector([materix[ind][0,3],materix[ind][1,3],materix[ind][2,3]])
                    
               
 

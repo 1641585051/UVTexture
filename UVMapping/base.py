@@ -3,11 +3,21 @@ from .. import taichi as ti
 
 
 samples : ti.Matrix = None
-''' shape = (1,2) * sampleNums '''
+''' shape = (1,sampleNums) (1,2)
+    [[ [0,0], : u
+       [1,0]  : v
+          ],
+    [  [0,0],
+       [1,0]
+          ],
+    ...
+         ]          
+
+'''
 
 @ti.kernel
 def reRandSamplesMaterixInstance(sampleNums : ti.uint16):
-   samples = ti.Matrix.field(n= 2,m= 1,dtype=ti.f32,shape=(sampleNums,1))
+   samples = ti.Matrix.field(n= 2,m= 1,dtype=ti.f32,shape=(1,sampleNums))
 
 
 floatingInterval : int = 1024
@@ -24,10 +34,10 @@ def setFloatingInterval(value : int):
 def fillSamples():
    for ind in ti.grouped(samples):
        
-       asix = ti.random(dtype=ti.f32) * ti.f32(floatingInterval / 65535)
        samples[ind][0,0] = ti.random(dtype= ti.f32)
-       samples[ind][0,1] = 1 - samples[ind][0,0] - asix
-      
+       # u
+       samples[ind][0,1] = 1 - samples[ind][0,0] -samples[ind][0,0]/floatingInterval
+       # v
 
       
    
