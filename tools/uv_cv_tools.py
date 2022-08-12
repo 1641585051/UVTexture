@@ -1,9 +1,8 @@
 from email.mime import image
 
-from mars.tensor.datasource.array import asarray
-from .. import cv2
-from .. import numpy as np
-from ..PIL import Image as image
+import cv2
+import numpy as np
+from PIL import Image as image
 
 
     

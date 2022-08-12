@@ -1,5 +1,5 @@
 import bpy
-from .. import taichi as ti
+import taichi as ti
 
 
 samples : ti.Matrix = None

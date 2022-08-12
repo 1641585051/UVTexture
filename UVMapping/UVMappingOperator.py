@@ -1,14 +1,12 @@
-from this import d, s
+
 import bpy
 import bmesh
-from taichi.lang.matrix import Vector
 
 
 
+from mars import tensor as ten 
 
-from ..mars import tensor as ten 
-
-from .. import numpy as np
+import numpy as np
 
 
 ## this file not have UVMapping Base Operator ,only have Calculation operators
@@ -158,8 +156,8 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
      
 
-      from .. import taichi as ti
-      from .. taichi import types
+      import taichi as ti
+      from taichi import types
       from .import base  
 
       floatingInterval : int = context.scene.uv_texture_System_config.floatingInterval
@@ -308,13 +306,11 @@ class UVTexture_OT_UvMappingInitDataOperator(bpy.types.Operator):
       backarr = np.array(object= backVerts,dtype= np.float32)
       # ndarray shape (backcount,3)
 
-      global gl_back_data
-
+    
       gl_back_data = ten.tensor(data= objarr,gpu= True)
       gl_back_data.execute()
 
-      global gl_mesh_data
-
+    
       gl_mesh_data = ten.tensor(data= backarr,gpu= True)
       gl_mesh_data.execute()
 

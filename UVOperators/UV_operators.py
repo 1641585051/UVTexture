@@ -1,4 +1,3 @@
-from typing import Any
 import bpy
 
 from ..dataDefine import DataProperty

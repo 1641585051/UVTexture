@@ -1,5 +1,4 @@
-from ast import pattern
-from email.policy import default
+
 import operator
 
 import bpy

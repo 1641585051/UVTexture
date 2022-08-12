@@ -1,4 +1,5 @@
 
+import importlib
 from typing import Any
 
 import bpy
@@ -85,6 +86,7 @@ from .tools import gpuEnv
 
 def register():
 
+
     gpuEnv.makeSureGPUEnv()
 
     registerFunc(dataClasses,False)
@@ -97,5 +99,9 @@ def unregister():
     registerFunc(dataClasses,True)
 
 
+
+
 if __name__ == "__main__":
+    
+    
     register()
