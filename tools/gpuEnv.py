@@ -23,5 +23,5 @@ def makeSureGPUEnv():
   else:
      pass
 
-  from .. import taichi as ti 
+  import taichi as ti 
   ti.init(arch=ti.gpu)
