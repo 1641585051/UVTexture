@@ -12,12 +12,14 @@ def scaleImage(array : np.ndarray,old_wdith: int,old_height: int,new_width: int,
     
     newarr = np.split(ary= array,indices_or_sections=[3,1],axis=2)
     # split rgb and alpha 
+    # opencv need GBk ,don't show photo ,so no need set RGB to GBK
 
     rgbArr = np.array(object= newarr[0],dtype=np.uint8)
 
     imag = image.fromarray(rgbArr)
 
-    alphaArr = np.array(object= [newarr[1],newarr[1],newarr[1]],dtype= np.uint8)
+    alphaArr = np.array(object= [newarr[1],newarr[1],newarr[1]],dtype= np.uint8) 
+    # opencv api need uint8 , float32 to uint8 
      
     alphaImag = image.fromarray(alphaArr) 
 

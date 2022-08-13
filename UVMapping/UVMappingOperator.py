@@ -25,14 +25,19 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
     bl_idname: str = 'object.calculateProjectionValue'  
     bl_label: str = 'get mapping project mesh data'
 
-  
+    uvMappingObjectName = bpy.props.StringProperty(name='uvMappingObjectName',default='None')
+
+    backGroundObjName = bpy.props.StringProperty(name='backGroundObjName',default='None')
+
+    isUseMultiStageSampling = bpy.props.BoolProperty(name='isUseMultiStageSampling',default=False)
+ 
     def check(self,context) -> bool:
-      ...
+      return (self.uvMappingObjectName != 'None' and self.backGroundObjName != 'None')
 
     def invoke(self, context, event):
        return super().invoke(context, event)
 
-    def execute(self, context):
+    def execute(self, context):   
 
       sampleNums = context.scene.uv_texture_output_config[list(context.scene.uv_texture_output_config.keys()).count() - 1].mappingSampleNums 
 
@@ -157,7 +162,6 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
      
 
       import taichi as ti
-      from taichi import types
       from .import base  
 
       floatingInterval : int = context.scene.uv_texture_System_config.floatingInterval
@@ -168,7 +172,7 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       spArr : np.ndarray = np.array(object= np.split(ary= datanpArr,indices_or_sections= 3,axis=1),dtype=np.float32)
       #  shape (3,4,n)
 
-      materix : ti.Matrix = ti.Matrix.field(n= 4,m=3,dtype= ti.float32,shape=(n,1))
+      materix : ti.MatrixField = ti.Matrix.field(n= 4,m=3,dtype= ti.float32,shape=(n,1))
       # [  [[00,10,20,    [[00,10,20,
       #      01,11,21,      01,11,21,
       #      02,12,22,      02,12,22, .....
@@ -179,7 +183,7 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       
       @ti.kernel
       def fullMaterix():
-        for ind in ti.grouped(materix):
+        for ind in ti.static(ti.grouped(materix)):
            
            materix[ind] = temNDa[ind[0],0]
            # materix (3,4)(n,1) so grouped -> ind = [0,0]/[1,0]/ ... [n,0]
@@ -192,10 +196,10 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
       base.fillSamples()
 
-      points = ti.Matrix.field(n= 3,m= 1,dtype= ti.f32,shape=(n,sampleNums))
+      points : ti.MatrixField = ti.Matrix.field(n= 3,m= 1,dtype= ti.f32,shape=(n,sampleNums))
       # [[0,0], ..... n
-      #  [1,0],
-      #  [2,0]],
+      #  [0,1],
+      #  [0,2]],
       #  .
       #  .
       #  .
@@ -203,11 +207,11 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
       @ti.kernel
       def RandPoints():
-          for ind in ti.grouped(materix):
+          for ind in ti.static(ti.grouped(materix)):
               # ind [0,0] / [1,0] ...
-              back_point0 = ti.Vector([[materix[ind][0,1]],
-                                       [materix[ind][1,1]],
-                                       [materix[ind][2,1]]])
+              back_point0 = [[materix[ind][0,1]],
+                            [materix[ind][1,1]],
+                            [materix[ind][2,1]]]
               back_point1 = ti.Vector([[materix[ind][0,2]],
                                        [materix[ind][1,2]],
                                        [materix[ind][2,2]]])
@@ -223,12 +227,12 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
                     uv = base.samples[0,ind1[1]] 
                     # uv is not blender uv ,that is Trigono metric parameter equations uv parmeters
                     # (1,2)
-                    points[ind1] = base.reRandPoint(
+                    points[ind1] = base.rePoint(
                                 point0= back_point0,
                                 point1= back_point1,
                                 point2= back_point2,
                                 u= uv[0,0],
-                                v= uv[1,0]
+                                v= uv[0,1]
 
                                 )
                   
@@ -237,21 +241,139 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       RandPoints()
        
 
+      result :ti.MatrixField = ti.Matrix.field(n=3,m=3,dtype=ti.f32,shape= (n,1))  
+      # [[[mesh.x ,mesh.y ,mesh.z ],  [[mesh.x ,mesh.y ,mesh.z ], ..... n
+      #   [bakeO.x,bakeO.y,bakeO.z],   [bakeO.x,bakeO.y,bakeO.z],
+      #   [u      ,v      ,      0]],  [u      ,v      ,      0]],
+      #  
+      #                                                               1 ]
+       
+
+      @ti.kernel
+      def NormalRayCapture():
+          for ind in ti.static(ti.grouped(materix)):
+
+              mesh_point = [[materix[ind][0,0]],
+                            [materix[ind][1,0]],
+                            [materix[ind][2,0]]
+                            ]
+              back_point0 = [[materix[ind][0,1]],
+                             [materix[ind][1,1]],
+                             [materix[ind][2,1]]
+                             ]
+              back_point1 = [[materix[ind][0,2]],
+                             [materix[ind][1,2]],
+                             [materix[ind][2,2]]
+                             ]
+              back_point2 = [[materix[ind][0,3]],
+                             [materix[ind][1,3]],
+                             [materix[ind][2,3]]
+                             ]
+
+              dirmaterix = ti.Vector(arr= mesh_point,dt= ti.f32)
+              materix0 = ti.Vector(arr= back_point0,dt=ti.f32)   
+              # materix0 in [Trigono metric parameter equations] have parameter (1- u-v) and this less than zero
+              
+              materix1 = ti.Vector(arr= back_point1,dt= ti.f32)
+              materix2 = ti.Vector(arr= back_point2,dt= ti.f32)
+              
+              
+              dirReference : ti.Matrix = dirmaterix - materix0
+              # dirReference use to have the normals generated by cross point to the 
+              # side that is biased towards the mesh point
+
+              var0 : ti.Matrix = materix1 - materix0
+              var1 : ti.Matrix = materix2 - materix0
+          
+              normal : ti.Matrix = var1.cross(var0)
+
+              if normal.dot(dirReference) < 0:
+                 normal = normal * -1
+
+              baryc : ti.Matrix = base.barycentr(o= materix0,b= materix1, c= materix2)
+
+              dots :ti.Matrix = ti.field(dtype=ti.f32,shape=(1,sampleNums))
+
+              for indPoints in ti.grouped(points):
+               
+                if indPoints[0] == ind[0]:
+                   
+                   for sampleInd in ti.static(ti.ndrange((0,sampleNums))):
+                      
+                      tem : ti.Matrix =  baryc - points[indPoints[0],sampleInd]
+                      
+                      othernor :ti.Matrix = mesh_point - points[indPoints[0],sampleInd]
+                      
+                      dots[1,sampleInd] = tem.dot(othernor) / ((tem[0,0]/ tem.normalized()[0,0]) * (othernor[0,0]/ othernor.normalized()[0,0]))
+                 
+              dots = ti.abs(arr=dots)
+
+              for dotInd in ti.grouped(dots):
+                 if dots[dotInd] == dots.min():
+                     uv = base.samples[0,dotInd[1]] 
+                     result[ind[0],0] = ti.Vector(
+                           arr= [
+                                 [mesh_point[0,0],mesh_point[0,1],mesh_point[0,2]],
+                                 [back_point0[0,0],back_point1[0,1],back_point2[0,2]],
+                                 [uv[0,0]         ,uv[0,1]         ,               0]
+                                ])
+
+      
+      NormalRayCapture()
+
+
+      
+
+      if gpuEnv.NVorAmd:
+
+        ##     CUDA     ##
+        array : np.ndarray = points.to_numpy()
+        
+        pointsformTaichi : ten.Tensor = ten.full(shape=array.shape,fill_value= array,dtype=np.float32)
+        
+
+        #(n, simpleNums,1,3)
+        
+
+
+
+
+        ## -----------------
+
+      else:
+        ##      AMD      ##
+
+
+
+
+
+        ##------------------
+        pass
+        
+        
+      
+      obj = context.scene.objects[context.scene.objects.find(self.uvMappingObjectName)]      
+
+      backgroundObj = context.scene.objects[context.scene.objects.find(self.backGroundObjName)]  
+
+      mesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(obj.to_mesh()) 
+      
+      backMesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(backgroundObj.to_mesh()) 
+
+      barray = result.to_numpy()
+      # (n,1,3,3)
+      
+
+
+
+      mesh.verts[mesh.verts.index()]
 
       
 
 
-      @ti.kernel
-      def NormalRayCapture():
-          for ind in ti.grouped(materix):
 
-              
-              mesh_point = ti.Vector([materix[ind][0,0],materix[ind][1,0],materix[ind][2,0]])
-              back_point0 = ti.Vector([materix[ind][0,1],materix[ind][1,1],materix[ind][2,1]])
-              back_point1 = ti.Vector([materix[ind][0,2],materix[ind][1,2],materix[ind][2,2]])
-              back_point2 = ti.Vector([materix[ind][0,3],materix[ind][1,3],materix[ind][2,3]])
-                   
-              
+
+      mesh.free()
 
         
 

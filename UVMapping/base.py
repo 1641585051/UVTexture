@@ -1,14 +1,14 @@
-import bpy
+
 import taichi as ti
 
 
 samples : ti.Matrix = None
 ''' shape = (1,sampleNums) (1,2)
     [[ [0,0], : u
-       [1,0]  : v
+       [0,1]  : v
           ],
     [  [0,0],
-       [1,0]
+       [0,1]
           ],
     ...
          ]          
@@ -46,7 +46,7 @@ def fillSamples():
 
 
 @ti.func
-def reRandPoint(point0 : ti.Matrix,point1 : ti.Matrix,point2: ti.Matrix,u ,v) -> ti.Matrix:
+def rePoint(point0 : ti.Matrix,point1 : ti.Matrix,point2: ti.Matrix,u ,v) -> ti.Matrix:
       '''point shape = (3,1) , u and v is float32 
          Trigono metric parameter equations
          "p = v * b + u * c + (1 - v - u) * a"
@@ -59,3 +59,64 @@ def reRandPoint(point0 : ti.Matrix,point1 : ti.Matrix,point2: ti.Matrix,u ,v) ->
        
       '''
       return point1 * v + point2 * u + (1 - u - v) * point0
+
+
+
+@ti.func
+def LinearIntegrationFunc(k , x):
+    return  (k * (1/2)) * (x **2)
+
+
+
+@ti.func
+def barycentr(o : ti.Matrix,b :ti.Matrix,c :ti.Matrix):
+
+    '''o,a,b : (n,m) 
+       [
+         [],
+         [],
+         []
+       ]
+      Virtual 3D has no concept of density,so ignore it and set to 1
+
+    '''
+
+    v : ti.Matrix = (b - o)
+
+    vK = v.normalized()
+
+    u : ti.Matrix = (c - o)
+
+    uK = u.normalized()
+
+    # the center of gravity is calculated by integrals
+    # func is LinearIntegrationFunc
+                                                                                                                                       # integral 1 (o,b)
+    vreposition : ti.Matrix = ti.Vector(arr =[[(LinearIntegrationFunc(k=vK[0,0],x=b[0,0]) - LinearIntegrationFunc(k=vK[0,0],x=o[0,0])) / v[0,0]],
+                                              [(LinearIntegrationFunc(k=vK[0,1],x=b[0,1]) - LinearIntegrationFunc(k=vK[0,1],x=o[0,1])) / v[0,1]],
+                                              [(LinearIntegrationFunc(k=vK[0,2],x=b[0,2]) - LinearIntegrationFunc(k=vK[0,2],x=o[0,2])) / v[0,2]]
+                                             ]) # integ(1 * k*x) / integ(1) form [o,b] , Performed separately on x,y,z
+    #still is  [ [],
+    #            [],
+    #            []]
+   
+   
+    ureposition : ti.Matrix = ti.Vector(arr =[[(LinearIntegrationFunc(k=uK[0,0],x=c[0,0]) - LinearIntegrationFunc(k=uK[0,0],x=o[0,0])) / u[0,0]],
+                                             [(LinearIntegrationFunc(k=uK[0,1],x=c[0,1]) - LinearIntegrationFunc(k=uK[0,1],x=o[0,1])) / u[0,1]],
+                                             [(LinearIntegrationFunc(k=uK[0,2],x=c[0,2]) - LinearIntegrationFunc(k=uK[0,2],x=o[0,2])) / u[0,2]]
+                                       ])
+ 
+    vtem = vreposition - o 
+
+    vend = vtem[0,0] / v[0,0]
+    # Since it is a linear space, only one axis(x) is taken
+
+    utem = ureposition - o
+
+    uend = utem[0,0] / v[0,0]
+
+    return rePoint(point0= o,point1= b,point2= c,u=uend,v= vend)
+    # Returns the center of gravity via parametric equations
+
+
+ 
