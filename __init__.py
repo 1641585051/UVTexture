@@ -1,4 +1,4 @@
-
+import sys
 import importlib
 from typing import Any
 
@@ -82,7 +82,7 @@ def registerFunc(classes : dict ,is_unRegister : bool = False):
           bpy.utils.register_class(cl)  
     
 
-from .tools import gpuEnv
+from .tools import gpuEnv,error
 
 def register():
 
@@ -103,5 +103,5 @@ def unregister():
 
 if __name__ == "__main__":
     
-    
+    sys.excepthook = tools.error.uvTextureExehook
     register()

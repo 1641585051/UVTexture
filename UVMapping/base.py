@@ -1,4 +1,5 @@
-
+import bpy
+import mathutils
 import taichi as ti
 
 
@@ -118,5 +119,17 @@ def barycentr(o : ti.Matrix,b :ti.Matrix,c :ti.Matrix):
     return rePoint(point0= o,point1= b,point2= c,u=uend,v= vend)
     # Returns the center of gravity via parametric equations
 
+def makeUVVertMap(obj : bpy.types.Object):
+          bpy.context.active_object = obj
+          meshMap : map[int,mathutils.Vector] = map()
+          me = bpy.context.object.data
+          uv_layer = me.uv_layers.active.data
 
+          for poly in me.polygons:
+
+             for loop_index in range(poly.loop_start, poly.loop_start + poly.loop_total):
+                
+                meshMap[me.loops[loop_index].vertex_index] = uv_layer[loop_index].uv
+
+          return meshMap  
  

@@ -1,13 +1,14 @@
 
+from this import d
 import bpy
 import bmesh
-
+import mathutils
 
 
 from mars import tensor as ten 
 
 import numpy as np
-
+from bpy.types import Context
 
 ## this file not have UVMapping Base Operator ,only have Calculation operators
 ## base operator in UV_operators.UVTexture_OT_ObjectUVMapping ...
@@ -18,6 +19,55 @@ gl_back_data : ten.Tensor = None
 gl_mesh_data : ten.Tensor = None
 '''gl_mesh_data only valid in one operation'''
 
+
+
+
+def updateDatas(context : Context,uvMappingObjectName : str,backGroundObjName :str):
+     
+      global gl_back_data
+      gl_back_data = None
+
+      global gl_mesh_data 
+      gl_mesh_data = None 
+
+      obj = context.scene.objects[context.scene.objects.find(uvMappingObjectName)]      
+
+      backgroundObj = context.scene.objects[context.scene.objects.find(backGroundObjName)]  
+
+      mesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(obj.to_mesh()) 
+
+      objVerts : list[tuple[np.float32,np.float32,np.float32]] = list()
+      objcount = mesh.verts.count()
+      for i in range(objcount):
+            ve = mesh.verts[i].co
+            objVerts.append((ve.x,ve.y,ve.z))
+
+
+      objarr = np.array(object= objVerts,dtype= np.float32).reshape()
+      # ndarray shape (objcount,3)
+      
+      backMesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(backgroundObj.to_mesh()) 
+      
+      backVerts : list[tuple[np.float32,np.float32,np.float32]] = list()
+      backcount = backMesh.verts.count()
+      for i in range(backcount):
+           ve = backMesh.verts[i].co
+           backVerts.append((ve.x,ve.y,ve.z))
+
+      backarr = np.array(object= backVerts,dtype= np.float32)
+      # ndarray shape (backcount,3)
+
+    
+      gl_back_data = ten.tensor(data= objarr,gpu= True)
+      gl_back_data.execute()
+
+    
+      gl_mesh_data = ten.tensor(data= backarr,gpu= True)
+      gl_mesh_data.execute()
+
+
+      mesh.free()
+       
 
 
 class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
@@ -241,9 +291,11 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       RandPoints()
        
 
-      result :ti.MatrixField = ti.Matrix.field(n=3,m=3,dtype=ti.f32,shape= (n,1))  
+      result :ti.MatrixField = ti.Matrix.field(n=5,m=3,dtype=ti.f32,shape= (n,1))  
       # [[[mesh.x ,mesh.y ,mesh.z ],  [[mesh.x ,mesh.y ,mesh.z ], ..... n
       #   [bakeO.x,bakeO.y,bakeO.z],   [bakeO.x,bakeO.y,bakeO.z],
+      #   [bake1.x,bake1.y,bake1.z],   [bake1.x,,bake1.y...]
+      #   [bake2.x,bake2.y,bake2.z],   ...
       #   [u      ,v      ,      0]],  [u      ,v      ,      0]],
       #  
       #                                                               1 ]
@@ -315,14 +367,13 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
                            arr= [
                                  [mesh_point[0,0],mesh_point[0,1],mesh_point[0,2]],
                                  [back_point0[0,0],back_point1[0,1],back_point2[0,2]],
-                                 [uv[0,0]         ,uv[0,1]         ,               0]
+                                 [back_point1[0,0],back_point1[0,1],back_point1[0,2]],
+                                 [back_point2[0,0],back_point2[0,1],back_point2[0,2]],
+                                 [uv[0,0]         ,uv[0,1]         ,               0] 
                                 ])
 
       
       NormalRayCapture()
-
-
-      
 
       if gpuEnv.NVorAmd:
 
@@ -351,31 +402,33 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
         pass
         
         
-      
       obj = context.scene.objects[context.scene.objects.find(self.uvMappingObjectName)]      
-
+      
+      meshMap = base.makeUVVertMap(obj= obj) 
+      
       backgroundObj = context.scene.objects[context.scene.objects.find(self.backGroundObjName)]  
 
-      mesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(obj.to_mesh()) 
-      
-      backMesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(backgroundObj.to_mesh()) 
+      backobjMap = base.makeUVVertMap(obj= backgroundObj)
+
 
       barray = result.to_numpy()
-      # (n,1,3,3)
-      
+      # (n,1,5,3)
+      barray1 = np.squeeze(a= barray)
+      # (n,5,3)
+
+      for ind in range(barray1.shape[0]):
+          
+          datas = barray1[ind]
+          meshPoint = [datas[0,0],datas[1,0],datas[2,0]]
+          rootbackPoint = [datas[0,1],datas[1,1],datas[2,1]]
+          point1 = [datas[0,2],datas[1,2],datas[2,2]]
+          point2 = [datas[0,3],datas[1,3],datas[2,3]]
+          uv = [datas[0,4],datas[1,4]]
+          
+          meshMap
 
 
 
-      mesh.verts[mesh.verts.index()]
-
-      
-
-
-
-
-      mesh.free()
-
-        
 
 class UVTexture_OT_UvMappingInitDataOperator(bpy.types.Operator):
 
@@ -395,49 +448,10 @@ class UVTexture_OT_UvMappingInitDataOperator(bpy.types.Operator):
 
     def execute(self, context):
 
-      global gl_back_data
-      gl_back_data = None
-
-      global gl_mesh_data 
-      gl_mesh_data = None 
-
-      obj = context.scene.objects[context.scene.objects.find(self.uvMappingObjectName)]      
-
-      backgroundObj = context.scene.objects[context.scene.objects.find(self.backGroundObjName)]  
-
-      mesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(obj.to_mesh()) 
-
-      objVerts : list[tuple[np.float32,np.float32,np.float32]] = list()
-      objcount = mesh.verts.count()
-      for i in range(objcount):
-            ve = mesh.verts[i].co
-            objVerts.append((ve.x,ve.y,ve.z))
-
-
-      objarr = np.array(object= objVerts,dtype= np.float32).reshape()
-      # ndarray shape (objcount,3)
-      
-      backMesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(backgroundObj.to_mesh()) 
-      
-      backVerts : list[tuple[np.float32,np.float32,np.float32]] = list()
-      backcount = backMesh.verts.count()
-      for i in range(backcount):
-           ve = backMesh.verts[i].co
-           backVerts.append((ve.x,ve.y,ve.z))
-
-      backarr = np.array(object= backVerts,dtype= np.float32)
-      # ndarray shape (backcount,3)
-
-    
-      gl_back_data = ten.tensor(data= objarr,gpu= True)
-      gl_back_data.execute()
-
-    
-      gl_mesh_data = ten.tensor(data= backarr,gpu= True)
-      gl_mesh_data.execute()
-
-
-      mesh.free()
+      updateDatas(context=context,
+                  uvMappingObjectName= self.uvMappingObjectName,
+                  backGroundObjName=self.backGroundObjName
+                  )
 
       
 
