@@ -40,24 +40,24 @@ def updateDatas(context : Context,uvMappingObjectName : str,backGroundObjName :s
       mesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(obj.to_mesh()) 
 
       objVerts : list[tuple[np.float32,np.float32,np.float32]] = list()
-      objcount = mesh.verts.count()
+      objcount = len(mesh.verts)
       for i in range(objcount):
             ve = mesh.verts[i].co
             objVerts.append((ve.x,ve.y,ve.z))
 
 
-      objarr = np.array(object= objVerts,dtype= np.float32).reshape()
+      objarr = np.array(object= objVerts,dtype= np.float32).reshape(shape=(objcount,3))
       # ndarray shape (objcount,3)
       
       backMesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(backgroundObj.to_mesh()) 
       
       backVerts : list[tuple[np.float32,np.float32,np.float32]] = list()
-      backcount = backMesh.verts.count()
+      backcount = len(backMesh.verts)
       for i in range(backcount):
            ve = backMesh.verts[i].co
            backVerts.append((ve.x,ve.y,ve.z))
 
-      backarr = np.array(object= backVerts,dtype= np.float32)
+      backarr = np.array(object= backVerts,dtype= np.float32).reshape(shape=(backcount,3))
       # ndarray shape (backcount,3)
 
     
