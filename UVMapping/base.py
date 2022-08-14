@@ -1,3 +1,4 @@
+from typing import Any
 import bpy
 import mathutils
 import taichi as ti
@@ -43,11 +44,24 @@ def fillSamples():
       
    
 
+def TrigonoMetricParameterEquations(a,b,c,u,v):
+    '''  
+         Trigono metric parameter equations
+         "p = v * b + u * c + (1 - v - u) * a"
+         
+         
+         use point0(a) as root : 
+         point1(b) use v
+         point2(c) use u 
+         p is result
+       
+      '''
+    return b * v + c * u + (1 - u - v) * a
 
 
 
 @ti.func
-def rePoint(point0 : ti.Matrix,point1 : ti.Matrix,point2: ti.Matrix,u ,v) -> ti.Matrix:
+def rePoint(point0  ,point1  ,point2 ,u : ti.f32 ,v : ti.f32) :
       '''point shape = (3,1) , u and v is float32 
          Trigono metric parameter equations
          "p = v * b + u * c + (1 - v - u) * a"
@@ -70,7 +84,7 @@ def LinearIntegrationFunc(k , x):
 
 
 @ti.func
-def barycentr(o : ti.Matrix,b :ti.Matrix,c :ti.Matrix):
+def barycentr(o ,b ,c):
 
     '''o,a,b : (n,m) 
        [
@@ -119,17 +133,27 @@ def barycentr(o : ti.Matrix,b :ti.Matrix,c :ti.Matrix):
     return rePoint(point0= o,point1= b,point2= c,u=uend,v= vend)
     # Returns the center of gravity via parametric equations
 
-def makeUVVertMap(obj : bpy.types.Object):
+def makeUVVertMap(obj : bpy.types.Object,isContainsUVData : bool):
+          '''if isContainsUVData is true ,reture map[int,mathutils.Vector]
+             else return layer and map[int,int] vert index -> loop index
+          
+          '''
+
           bpy.context.active_object = obj
-          meshMap : map[int,mathutils.Vector] = map()
+          meshMap = map()
           me = bpy.context.object.data
           uv_layer = me.uv_layers.active.data
 
           for poly in me.polygons:
 
              for loop_index in range(poly.loop_start, poly.loop_start + poly.loop_total):
-                
-                meshMap[me.loops[loop_index].vertex_index] = uv_layer[loop_index].uv
+                if isContainsUVData:
+                   meshMap[me.loops[loop_index].vertex_index] = me.loops[loop_index].uv
+                else:
+                   meshMap[me.loops[loop_index].vertex_index] = loop_index
 
-          return meshMap  
+          if isContainsUVData:
+             return meshMap  
+          else:
+             return meshMap,uv_layer   
  

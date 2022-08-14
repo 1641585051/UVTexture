@@ -1,8 +1,11 @@
 
+import sys
 from this import d
+from .base import rePoint
 import bpy
 import bmesh
 import mathutils
+
 
 
 from mars import tensor as ten 
@@ -66,6 +69,7 @@ def updateDatas(context : Context,uvMappingObjectName : str,backGroundObjName :s
       gl_mesh_data.execute()
 
 
+      backMesh.free()
       mesh.free()
        
 
@@ -374,9 +378,12 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
       
       NormalRayCapture()
+ 
+      # Sample multiple times to improve accuracy 
 
       if gpuEnv.NVorAmd:
 
+       
         ##     CUDA     ##
         array : np.ndarray = points.to_numpy()
         
@@ -400,34 +407,105 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
         ##------------------
         pass
+
+
+
+
+      from ..lookMouse import lookMouse
+
+      lookMouse.lookMouse()
         
-        
-      obj = context.scene.objects[context.scene.objects.find(self.uvMappingObjectName)]      
-      
-      meshMap = base.makeUVVertMap(obj= obj) 
-      
       backgroundObj = context.scene.objects[context.scene.objects.find(self.backGroundObjName)]  
 
-      backobjMap = base.makeUVVertMap(obj= backgroundObj)
+      backobjMap = base.makeUVVertMap(obj= backgroundObj,isContainsUVData= True)
 
+      obj = context.scene.objects[context.scene.objects.find(self.uvMappingObjectName)]      
+      
+      meshMap,obj_layer = base.makeUVVertMap(obj= obj,isContainsUVData= False) 
+      
+      mesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(obj.to_mesh()) 
+      
+      backMesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(backgroundObj.to_mesh())
 
       barray = result.to_numpy()
       # (n,1,5,3)
       barray1 = np.squeeze(a= barray)
       # (n,5,3)
 
+      def getIndex(mesh : bmesh.types.BMesh, point: mathutils.Vector):
+        meshIndex : int = sys.maxsize
+        for vert in mesh.verts:
+             bvert : bmesh.types.BMVert = vert
+             if bvert.co == point:
+                 meshIndex = bvert.index
+        return meshIndex
+
+      bpy.context.active_object = obj
+      
       for ind in range(barray1.shape[0]):
-          
+
           datas = barray1[ind]
-          meshPoint = [datas[0,0],datas[1,0],datas[2,0]]
-          rootbackPoint = [datas[0,1],datas[1,1],datas[2,1]]
-          point1 = [datas[0,2],datas[1,2],datas[2,2]]
-          point2 = [datas[0,3],datas[1,3],datas[2,3]]
+          meshPoint = mathutils.Vector()
+          meshPoint.xyz = (datas[0,0],datas[1,0],datas[2,0])
+          
+          meshIndex : int = getIndex(mesh= mesh,point= meshPoint)
+
+          rootbackPoint = mathutils.Vector()
+          rootbackPoint.xyz = (datas[0,1],datas[1,1],datas[2,1]) 
+          
+          rootIndex :int = getIndex(mesh= backMesh,point= rootbackPoint)
+          
+          rootuv : mathutils.Vector = mathutils.Vector()
+          if rootIndex != sys.maxsize:
+            rootuv.xy = backobjMap[rootIndex].xy # backobjMap value is Vector
+
+          point1 = mathutils.Vector() 
+          point1.xyz = (datas[0,2],datas[1,2],datas[2,2])
+        
+          point1Index : int = getIndex(mesh= backMesh,point= point1)
+          
+          point1uv : mathutils.Vector = mathutils.Vector()
+          if point1Index != sys.maxsize:
+            point1uv.xy = backobjMap[point1Index].xy
+
+          point2 = mathutils.Vector()
+          point2.xyz = (datas[0,3],datas[1,3],datas[2,3])
+
+          point2Index : int = getIndex(mesh= backMesh, point= point2)
+
+          point2uv : mathutils.Vector = mathutils.Vector()
+          if point2Index != sys.maxsize:
+            point2uv.xy = backobjMap[point2Index].xy
+            
+
           uv = [datas[0,4],datas[1,4]]
           
-          meshMap
+          #get three points uv
+          #  
+          puv : mathutils.Vector = mathutils.Vector()
 
+          if (rootIndex != sys.maxsize and
+              point1Index != sys.maxsize and
+              point2Index != sys.maxsize 
+              ):
 
+              puv = base.TrigonoMetricParameterEquations(point0= rootuv,point1= point1uv, point2= point2uv,u= uv[0],v= uv[1]) 
+          else:
+             find = (rootIndex != sys.maxsize,point1Index != sys.maxsize,point2Index != sys.maxsize)
+             raise RuntimeWarning("root:" + str(find[0]) + "\n" + "point1:" + str(find[1]) + "\n" + "point2:" + str(find[2])) 
+
+          if meshIndex != sys.maxsize and puv.xyz != mathutils.Vector().xyz:
+
+            obj_layer[meshMap[meshIndex]].uv.x = puv.x
+            obj_layer[meshMap[meshIndex]].uv.y = puv.y
+          else:
+            raise RuntimeWarning("don't find this point in" + obj.name + "position :  " + str(meshPoint) + "\n" + "and don't find mapping points")
+
+      lookMouse.unlookMouse()
+
+      backMesh.free()
+      mesh.free()
+      
 
 
 class UVTexture_OT_UvMappingInitDataOperator(bpy.types.Operator):

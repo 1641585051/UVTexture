@@ -1,5 +1,5 @@
-from operator import index
-from re import T
+
+
 from typing import Any
 
 from mars.core import base
@@ -55,23 +55,17 @@ class gpuImageDef:
 
            return boollist       
 
+       ten.compress(returnCondition(),stack,axis= 2,out=self.gpuImage).execute()
 
-       self.gpuImage = ten.tensor(data =ten.compress(returnCondition(),stack,axis= 2),gpu=True)
-
-       self.gpuImage.execute()
 
        
    
 
-
-
-   
-
-  
 class gpuImageStack:
     '''this strack use cuda ,because mars use cuda
     
        and data color use rgb mode
+       (0,255)
     '''
 
     __width : int = 1024
@@ -127,11 +121,10 @@ class gpuImageStack:
          scaleArr = uv_cv_tools.scaleImage(array= array,old_wdith= data.width,old_height= data.height,new_width= self.__width,new_height= self.__height)
 
          data.gpuImage = ten.tensor(data= scaleArr,dtype= ten.float64,gpu=True)
-
+         data.gpuImage.execute()
          
-         ...
-
-      self.__stackgpudata = ten.tensor(data= ten.dstack((self.__stackgpudata,data.gpuImage)),gpu= True) 
+      tem : ten.Tensor = ten.dstack((self.__stackgpudata,data.gpuImage))
+      self.__stackgpudata = ten.tensor(data= tem.to_numpy(),gpu= True) 
       
       self.__stackgpudata.execute()
 
@@ -153,7 +146,8 @@ class gpuImageStack:
 
        dellist = list((delIndex + ind for ind in range(4)))
        
-       self.__stackgpudata = ten.tensor(data =ten.delete(arr= self.__stackgpudata,obj=dellist,axis =2),gpu= True)
+       tem :ten.Tensor = ten.delete(arr= self.__stackgpudata,obj=dellist,axis =2)
+       self.__stackgpudata = ten.tensor(data =tem.to_numpy(),gpu= True)
        self.__stackgpudata.execute()
        
 
@@ -166,8 +160,6 @@ class gpuImageStack:
            self.__stacks.pop(item)
            
            
-
-
     def getlastName(self):
         if self.__imageOperatorNames.count() != 0:
 
@@ -203,7 +195,8 @@ class gpuImageStack:
 
          de_obj = list((de_ind *4 + ind2 for ind2 in range(self.__imageOperatorNames.count()*4  - de_ind *4)))
 
-         self.__stackgpudata = ten.tensor(data= ten.delete(arr= self.__stackgpudata,obj =de_obj,axis=2),gpu=True)
+         tem : ten.Tensor = ten.delete(arr= self.__stackgpudata,obj =de_obj,axis=2)
+         self.__stackgpudata = ten.tensor(data= tem.to_numpy(),gpu=True)
          self.__stackgpudata.execute()
 
            
