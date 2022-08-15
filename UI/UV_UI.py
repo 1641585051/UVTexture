@@ -1,3 +1,5 @@
+from textwrap import indent
+from typing import Any
 import bpy
 from ..UVOperators import UV_operators
 from ..dataDefine import DataProperty
@@ -15,17 +17,20 @@ class UVTexture_UL_List_uv_tree(bpy.types.UIList):
    
    def draw_item(self,context,layout,data,item,icon: int,active_data,active_property,index,flt_flag):
       
-     
-
       if self.layout_type in {"DEFAULT", "COMPACT"}:
            
          box = layout.box()
-         subrow = box.row()
-         subrow.prop(data=item.active,property=item.active.name)
-         #error AttributeError: '_PropertyDeferred' object has no attribute 'name'
-         subrow.prop(data=item.layerName,property=item.layerName.name) 
          
-         subrow1 = box.row()
+         row = box.row()
+         
+         row.prop(data= data,property= 'active_' + str(index),text="")
+         row.prop(data= data,property= 'layerName_' + str(index),text = "")
+         
+         row2 = box.row()
+         
+
+
+        
          
 
 
@@ -33,12 +38,7 @@ class UVTexture_UL_List_uv_tree(bpy.types.UIList):
            pass
 
    
-  # def draw_filter(self, context, layout):
-     # super().draw_filter(context,layout)
-
-  # def filter_items(self, context, data, property: str):
-     # super().filter_items(context,data,property)
-    
+  
 
 
 
@@ -76,8 +76,8 @@ class UVTexture_PT_Base(bpy.types.Panel):
          "uv_texture_list",
          scene,
          "uv_texture_list_index",
-         rows= 5,
-         maxrows= 12
+         rows= scene.uilistData.layerMinNum,
+         maxrows= scene.uilistData.layerMaxNum
 
          )
 
@@ -86,7 +86,6 @@ class UVTexture_PT_Base(bpy.types.Panel):
       
       subrow.operator(operator= 'object.deletelayer',text="",icon="REMOVE")
       
-
 
 
 

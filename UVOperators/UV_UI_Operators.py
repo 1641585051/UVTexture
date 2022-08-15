@@ -1,4 +1,5 @@
 
+
 import bpy
 
 
@@ -8,36 +9,43 @@ class UITree_OT_createItem(bpy.types.Operator):
     bl_idname: str = "object.createlayer"
     bl_label: str = "create layer"
 
+    
+
     def execute(self, context):
         
         scene = bpy.context.scene
 
         item = scene.uv_texture_list.add() 
-        scene.uv_texture_list_index += 1 
+        scene.uv_texture_list_index +=1
+
+        if len(scene.uv_texture_output_config) == 0:
+           DataProperty.InitOutPutConfig()
 
         config = scene.uv_bake_image_config.add()
-        config.width = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config.keys())) - 1].textureSideLength
-        config.height = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config.keys())) - 1].textureSideLength
+        config.width = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config)) - 1].textureSideLength
+        config.height = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config)) - 1].textureSideLength
         config.color = (0.0,0.0,0.0)
         config.float32 = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config.keys())) - 1].float32 
 
         item.active = True
-        item.layerName = 'layer : (' + str(scene.uv_texture_list_index) + ')'
-        item.uvTextureLayer.coverObjName = DataProperty.defaultBakegroundObjName
-        item.uvTextureLayer.blendMode = UVListLayer.blend_id + str(UVListLayer.BlendMode.Normal)
-        item.isUseAlphaTexture = False
-        item.isUseBlur = False
-        item.blurType = UVListLayer.blur_id + str(UVListLayer.BlurType.Null)
-        item.bakeTemplateType = UVListLayer.template_id + str(UVListLayer.BakeTemplate.Base)
+
+        item.layerName = 'layer_' + str(scene.uv_texture_list_index)
         
+        setting = scene.uv_texture_settings.add()
+
+        setting.coverObjName = ""
+        setting.blendMode = UVListLayer.blend_id + str(UVListLayer.BlendMode.Normal)
+        setting.isUseAlphaTexture = False
+        setting.isUseBlur = False
+        setting.blurType = UVListLayer.blur_id + str(UVListLayer.BlurType.Null)
+        setting.bakeTemplateType = UVListLayer.template_id + str(UVListLayer.BakeTemplate.Base)
         
-
-
-
         
         return {"FINISHED"}
     
- 
+    
+
+
 
 class UITree_OT_deleteItem(bpy.types.Operator):
     bl_idname: str = "object.deletelayer"
@@ -59,7 +67,7 @@ class UITree_OT_deleteItem(bpy.types.Operator):
 
         scene.uv_texture_list_index = min(max(0,index - 1),len(scene.uv_texture_list) - 1)
 
-        pass
+        return {"FINISHED"}
 
 
 class UITree_OT_moveItem(bpy.types.Operator):

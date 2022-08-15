@@ -249,7 +249,34 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
       fullMaterix()
 
-    
+      # the reason for not using mt-ray inspection is to avoid the 
+      # appearance of singular four - sided faces
+      #
+      #
+      #
+      #
+      #       A (x1,y1,z1)                            P * (noraml *A + x) 
+      #       | \                      normal |    c(B) |     
+      #       |  \                        A   |----*    | 
+      #       |   \                               /     |
+      #       |     \                            /
+      #     B |       \ C    B :(x2,y2,z2)  D
+      #      /        /      C :(x3,y3,z3)
+      #     /       /
+      #    /     /
+      #   /    /
+      #  /   /
+      # /  /
+      # D (x4,y4,z4)
+      # in (x,y,z)
+      # 
+
+
+
+
+
+
+
       base.reRandSamplesMaterixInstance(sampleNums= sampleNums)
 
       base.fillSamples()

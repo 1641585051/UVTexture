@@ -60,6 +60,8 @@ dataClasses = {
   3: DataProperty.BakeExtendTemplateData,
   4: DataProperty.UVTextureOutPutConfig,
   5: DataProperty.SystemData
+  
+
 
 
 
@@ -92,6 +94,9 @@ def register():
     registerFunc(dataClasses,False)
     DataProperty.UVTextureProperties()
     registerFunc(classes,False)
+
+    bpy.types.Scene.uilistData.init()
+
  
 def unregister():
     
