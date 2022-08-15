@@ -15,14 +15,15 @@ class UVTexture_UL_List_uv_tree(bpy.types.UIList):
    
    def draw_item(self,context,layout,data,item,icon: int,active_data,active_property,index,flt_flag):
       
-      uv_item : DataProperty.UVTree_list_item  = item
+     
 
       if self.layout_type in {"DEFAULT", "COMPACT"}:
            
          box = layout.box()
          subrow = box.row()
-         subrow.prop(data=uv_item.active,property=uv_item.active.name)
-         subrow.prop(data=uv_item.layerName,property=uv_item.layerName.name) 
+         subrow.prop(data=item.active,property=item.active.name)
+         #error AttributeError: '_PropertyDeferred' object has no attribute 'name'
+         subrow.prop(data=item.layerName,property=item.layerName.name) 
          
          subrow1 = box.row()
          
@@ -32,11 +33,11 @@ class UVTexture_UL_List_uv_tree(bpy.types.UIList):
            pass
 
    
-   def draw_filter(self, context, layout):
-      super().draw_filter(context,layout)
+  # def draw_filter(self, context, layout):
+     # super().draw_filter(context,layout)
 
-   def filter_items(self, context, data, property: str):
-      super().filter_items(context,data,property)
+  # def filter_items(self, context, data, property: str):
+     # super().filter_items(context,data,property)
     
 
 
@@ -63,9 +64,11 @@ class UVTexture_PT_Base(bpy.types.Panel):
       box = layout.box()
       box.label(text= 'uv_tree')
       
+      listrow = box.row()
+
       scene = context.scene
 
-      box.template_list(
+      listrow.template_list(
          
          UVTexture_UL_List_uv_tree.bl_idname,
          UVTexture_UL_List_uv_tree.list_id,
@@ -77,3 +80,14 @@ class UVTexture_PT_Base(bpy.types.Panel):
          maxrows= 12
 
          )
+
+      subrow = listrow.column()   
+      subrow.operator(operator= 'object.createlayer',text= "",icon="ADD")
+      
+      subrow.operator(operator= 'object.deletelayer',text="",icon="REMOVE")
+      
+
+
+
+
+

@@ -40,8 +40,8 @@ classes : dict[int,Any] = {
   5: UV_UI_Operators.UITree_OT_moveItem, 
   6: UV_operators.UVTexture_OT_InitOperator,
   7: UV_operators.UVTexture_OT_ObjectUVMapping,
-  8: UVMapping.UVMappingOperator.UVTexture_OT_UvMappingInitDataOperator,
-
+  8: UVMappingOperator.UVTexture_OT_UvMappingInitDataOperator,
+  9: UVMappingOperator.UVTExture_OT_UvMappingCalculateProjectionValue,
 
  
 ## expend

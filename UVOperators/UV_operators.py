@@ -1,13 +1,18 @@
 import bpy
+import bmesh
+import sys
+import mathutils
 
 from ..dataDefine import DataProperty
 from . import BakeNodeTreeTemplate
 
-
+from ..UVMapping import base,UVMappingOperator
 
 
 class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
-   
+   ''' need run UVTExture_OT_UvMappingCalculateProjectionValue
+       to get mapping result
+   '''
    
    bl_idname :str = "object.uvmapping"
    bl_label: str = "mapping uv on target object"
@@ -19,7 +24,99 @@ class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
       return super().invoke(context, event)
 
    def execute(self, context):
-      ...
+      
+      resultDatas = UVMappingOperator.getResult()
+
+      from ..lookMouse import lookMouse
+
+      lookMouse.lookMouse()
+      
+      backgroundObj = context.scene.objects[context.scene.objects.find(self.backGroundObjName)]  
+
+      backobjMap = base.makeUVVertMap(obj= backgroundObj,isContainsUVData= True)
+
+      obj = context.scene.objects[context.scene.objects.find(self.uvMappingObjectName)]      
+      
+      meshMap,obj_layer = base.makeUVVertMap(obj= obj,isContainsUVData= False) 
+      
+      mesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(obj.to_mesh()) 
+      
+      backMesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(backgroundObj.to_mesh())
+
+      def getIndex(mesh : bmesh.types.BMesh, point: mathutils.Vector):
+        meshIndex : int = sys.maxsize
+        for vert in mesh.verts:
+             bvert : bmesh.types.BMVert = vert
+             if bvert.co == point:
+                 meshIndex = bvert.index
+        return meshIndex
+
+      bpy.context.active_object = obj
+      
+      for ind in range(resultDatas.shape[0]):
+
+          datas = resultDatas[ind]
+          meshPoint = mathutils.Vector()
+          meshPoint.xyz = (datas[0,0],datas[1,0],datas[2,0])
+          
+          meshIndex : int = getIndex(mesh= mesh,point= meshPoint)
+
+          rootbackPoint = mathutils.Vector()
+          rootbackPoint.xyz = (datas[0,1],datas[1,1],datas[2,1]) 
+          
+          rootIndex :int = getIndex(mesh= backMesh,point= rootbackPoint)
+          
+          rootuv : mathutils.Vector = mathutils.Vector()
+          if rootIndex != sys.maxsize:
+            rootuv.xy = backobjMap[rootIndex].xy # backobjMap value is Vector
+
+          point1 = mathutils.Vector() 
+          point1.xyz = (datas[0,2],datas[1,2],datas[2,2])
+        
+          point1Index : int = getIndex(mesh= backMesh,point= point1)
+          
+          point1uv : mathutils.Vector = mathutils.Vector()
+          if point1Index != sys.maxsize:
+            point1uv.xy = backobjMap[point1Index].xy
+
+          point2 = mathutils.Vector()
+          point2.xyz = (datas[0,3],datas[1,3],datas[2,3])
+
+          point2Index : int = getIndex(mesh= backMesh, point= point2)
+
+          point2uv : mathutils.Vector = mathutils.Vector()
+          if point2Index != sys.maxsize:
+            point2uv.xy = backobjMap[point2Index].xy
+            
+
+          uv = [datas[0,4],datas[1,4]]
+          
+          #get three points uv
+          #  
+          puv : mathutils.Vector = mathutils.Vector()
+
+          if (rootIndex != sys.maxsize and
+              point1Index != sys.maxsize and
+              point2Index != sys.maxsize 
+              ):
+
+              puv = base.TrigonoMetricParameterEquations(point0= rootuv,point1= point1uv, point2= point2uv,u= uv[0],v= uv[1]) 
+          else:
+             find = (rootIndex != sys.maxsize,point1Index != sys.maxsize,point2Index != sys.maxsize)
+             raise RuntimeWarning("root:" + str(find[0]) + "\n" + "point1:" + str(find[1]) + "\n" + "point2:" + str(find[2])) 
+
+          if meshIndex != sys.maxsize and puv.xyz != mathutils.Vector().xyz:
+
+            obj_layer[meshMap[meshIndex]].uv.x = puv.x
+            obj_layer[meshMap[meshIndex]].uv.y = puv.y
+          else:
+            raise RuntimeWarning("don't find this point in" + obj.name + "position :  " + str(meshPoint) + "\n" + "and don't find mapping points")
+
+      lookMouse.unlookMouse()
+
+      backMesh.free()
+      mesh.free()
+      
 
    
 

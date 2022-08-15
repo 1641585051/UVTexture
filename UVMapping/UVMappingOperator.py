@@ -22,7 +22,11 @@ gl_back_data : ten.Tensor = None
 gl_mesh_data : ten.Tensor = None
 '''gl_mesh_data only valid in one operation'''
 
+resultDatas : np.ndarray = None 
+'''UVTExture_OT_UvMappingCalculateProjectionValue result'''
 
+def getResult() -> np.ndarray:
+  return resultDatas
 
 
 def updateDatas(context : Context,uvMappingObjectName : str,backGroundObjName :str):
@@ -76,7 +80,7 @@ def updateDatas(context : Context,uvMappingObjectName : str,backGroundObjName :s
 
 class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
-    bl_idname: str = 'object.calculateProjectionValue'  
+    bl_idname: str = 'object.calculateprojectionvalue'  
     bl_label: str = 'get mapping project mesh data'
 
     uvMappingObjectName = bpy.props.StringProperty(name='uvMappingObjectName',default='None')
@@ -350,6 +354,9 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
               dots :ti.Matrix = ti.field(dtype=ti.f32,shape=(1,sampleNums))
 
+              
+              # only use one samples 
+              # two or three samples more better
               for indPoints in ti.grouped(points):
                
                 if indPoints[0] == ind[0]:
@@ -362,6 +369,7 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
                       
                       dots[1,sampleInd] = tem.dot(othernor) / ((tem[0,0]/ tem.normalized()[0,0]) * (othernor[0,0]/ othernor.normalized()[0,0]))
                  
+
               dots = ti.abs(arr=dots)
 
               for dotInd in ti.grouped(dots):
@@ -379,42 +387,17 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       
       NormalRayCapture()
  
-      # Sample multiple times to improve accuracy 
-
-      if gpuEnv.NVorAmd:
-
-       
-        ##     CUDA     ##
-        array : np.ndarray = points.to_numpy()
-        
-        pointsformTaichi : ten.Tensor = ten.full(shape=array.shape,fill_value= array,dtype=np.float32)
-        
-
-        #(n, simpleNums,1,3)
-        
-
-
-
-
-        ## -----------------
-
-      else:
-        ##      AMD      ##
-
-
-
-
-
-        ##------------------
-        pass
-
-
-
+      barray = result.to_numpy()
+      # (n,1,5,3)
+      global resultDatas
+      resultDatas = np.squeeze(a= barray)
+      # (n,5,3)
+ 
 
       from ..lookMouse import lookMouse
 
       lookMouse.lookMouse()
-        
+      
       backgroundObj = context.scene.objects[context.scene.objects.find(self.backGroundObjName)]  
 
       backobjMap = base.makeUVVertMap(obj= backgroundObj,isContainsUVData= True)
@@ -427,11 +410,6 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       
       backMesh : bmesh.types.BMesh = bmesh.types.BMesh.from_mesh(backgroundObj.to_mesh())
 
-      barray = result.to_numpy()
-      # (n,1,5,3)
-      barray1 = np.squeeze(a= barray)
-      # (n,5,3)
-
       def getIndex(mesh : bmesh.types.BMesh, point: mathutils.Vector):
         meshIndex : int = sys.maxsize
         for vert in mesh.verts:
@@ -442,9 +420,9 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
       bpy.context.active_object = obj
       
-      for ind in range(barray1.shape[0]):
+      for ind in range(resultDatas.shape[0]):
 
-          datas = barray1[ind]
+          datas = resultDatas[ind]
           meshPoint = mathutils.Vector()
           meshPoint.xyz = (datas[0,0],datas[1,0],datas[2,0])
           
