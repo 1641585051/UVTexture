@@ -83,6 +83,8 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
     bl_idname: str = 'object.calculateprojectionvalue'  
     bl_label: str = 'get mapping project mesh data'
 
+    bl_option = 'BLOCKING' 
+
     uvMappingObjectName = bpy.props.StringProperty(name='uvMappingObjectName',default='None')
 
     backGroundObjName = bpy.props.StringProperty(name='backGroundObjName',default='None')
@@ -421,9 +423,6 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       # (n,5,3)
  
 
-      from ..lookMouse import lookMouse
-
-      lookMouse.lookMouse()
       
       backgroundObj = context.scene.objects[context.scene.objects.find(self.backGroundObjName)]  
 
@@ -505,8 +504,6 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
             obj_layer[meshMap[meshIndex]].uv.y = puv.y
           else:
             raise RuntimeWarning("don't find this point in" + obj.name + "position :  " + str(meshPoint) + "\n" + "and don't find mapping points")
-
-      lookMouse.unlookMouse()
 
       backMesh.free()
       mesh.free()

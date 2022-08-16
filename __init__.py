@@ -42,6 +42,9 @@ classes : dict[int,Any] = {
   7: UV_operators.UVTexture_OT_ObjectUVMapping,
   8: UVMappingOperator.UVTexture_OT_UvMappingInitDataOperator,
   9: UVMappingOperator.UVTExture_OT_UvMappingCalculateProjectionValue,
+  10: UV_UI_Operators.UITree_OT_eyetropper_CoverObjName,
+  11: UV_UI.UVTexture_PT_layer_Image_stack,
+
 
  
 ## expend
@@ -74,8 +77,6 @@ def registerFunc(classes : dict ,is_unRegister : bool = False):
     values = classes.values()
     valueList = list(values)
     
-    if(is_unRegister):
-       valueList.reverse()
 
     for cl in valueList:
         if(is_unRegister):
@@ -99,14 +100,20 @@ def register():
 
  
 def unregister():
+
     
+
     registerFunc(classes,True)
+    bpy.types.Scene.uilistData.unload()
+    
     registerFunc(dataClasses,True)
+
+    
 
 
 
 
 if __name__ == "__main__":
     
-    sys.excepthook = tools.error.uvTextureExehook
+    sys.excepthook = error.uvTextureExehook
     register()

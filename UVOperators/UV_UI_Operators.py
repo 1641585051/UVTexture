@@ -5,11 +5,39 @@ import bpy
 
 from ..dataDefine import DataProperty,UVListLayer
 
+
+
+class UITree_OT_eyetropper_CoverObjName(bpy.types.Operator):
+ 
+    bl_idname: str = "object.eyetropper_coverobjname"
+    bl_label: str = "eyetropper coverObjName form 3D view by active Object"
+    
+    def check(self, context) -> bool:
+        scene = bpy.context.scene
+        
+        return scene.layer_choose_index != -1
+
+
+    def execute(self, context):
+
+        scene = bpy.context.scene
+        activeObj = bpy.context.active_object
+        setattr(scene,'coverObjName_' + str(scene.layer_choose_index),activeObj.name)
+
+        return {"FINISHED"}
+
+  
+
+
+
 class UITree_OT_createItem(bpy.types.Operator):
     bl_idname: str = "object.createlayer"
     bl_label: str = "create layer"
 
-    
+    def check(self, context) -> bool:
+        scene = bpy.context.scene
+        
+        return len(scene.uv_texture_list) < 99
 
     def execute(self, context):
         
@@ -35,9 +63,7 @@ class UITree_OT_createItem(bpy.types.Operator):
 
         setting.coverObjName = ""
         setting.blendMode = UVListLayer.blend_id + str(UVListLayer.BlendMode.Normal)
-        setting.isUseAlphaTexture = False
-        setting.isUseBlur = False
-        setting.blurType = UVListLayer.blur_id + str(UVListLayer.BlurType.Null)
+        setting.isUseAlphaTexture = True
         setting.bakeTemplateType = UVListLayer.template_id + str(UVListLayer.BakeTemplate.Base)
         
         
