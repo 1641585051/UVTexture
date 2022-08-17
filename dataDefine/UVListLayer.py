@@ -4,36 +4,34 @@ import bpy
 import enum
 
 from bpy.types import Struct
-from ..tools import tips
 
+
+# control
 class BlendMode(enum.Enum):
     '''BlendMode use PS ,don't use Contrast blend mode'''
 
     Normal = 'normal'
     '''正常'''
 
-    Dissolve = 'dissolve'
-    '''溶解'''
-
     Darken = 'darken'
     '''变暗'''
 
-    PositiveSheetStacked = 'positiveSheetStacked'
+    Multiply = 'multiply'
     '''正片叠底'''
 
-    ColorDeepened = 'colorDeepened'
+    ColorBurn = 'colorBurn'
     '''颜色加深'''
 
     Deep = 'deep'
     '''深色'''
 
-    Brighten = 'brighten'
+    Lighten = 'lighten'
     '''变亮'''
 
-    ColorFilter = 'colorFilter'
+    Screen = 'screen'
     '''滤色'''
 
-    ColorLightning = 'colorLightning'
+    ColorDodge = 'colorDodge'
     '''颜色减淡'''
 
     Shallow = 'shallow'
@@ -54,27 +52,65 @@ class BlendMode(enum.Enum):
     Brightness = 'brightness'
     '''亮度'''
 
+    LinearBurn = 'linearBurn'
+    '''线性加深'''
+
+    LinearDodge = 'linearDodge'
+    '''线性加深'''
+
+    Overlay = 'overlay'
+    '''叠加'''
+
+    HardLight = 'hardLight'
+    '''强光'''
+
+    SoftLight = 'softLight'
+    '''柔光'''
+
+    VividLight = 'vividLight'
+    '''亮光'''
+
+    LinearLight = 'linearLight'
+    '''线性光'''
+
+    PinLight = 'pinLight'
+    '''点光'''
+
+    HardMix = 'hardMix'
+    '''实色混合'''
+
+
+
 blend_id = str("BlendMode_")
 
 modes = [
-    (blend_id + str(BlendMode.Normal),str(BlendMode.Normal),str(BlendMode.Normal)),
-    (blend_id + str(BlendMode.Dissolve),str(BlendMode.Dissolve),str(BlendMode.Dissolve)),
-    (blend_id + str(BlendMode.Darken),str(BlendMode.Darken),str(BlendMode.Darken)),
-    (blend_id + str(BlendMode.PositiveSheetStacked),str(BlendMode.PositiveSheetStacked),str(BlendMode.PositiveSheetStacked)),
-    (blend_id + str(BlendMode.ColorDeepened),str(BlendMode.ColorDeepened),str(BlendMode.ColorDeepened)),
-    (blend_id + str(BlendMode.Deep),str(BlendMode.Deep),str(BlendMode.Deep)),
-    (blend_id + str(BlendMode.Brighten),str(BlendMode.Brighten),str(BlendMode.Brighten)),
-    (blend_id + str(BlendMode.ColorFilter),str(BlendMode.ColorFilter),str(BlendMode.ColorFilter)),
-    (blend_id + str(BlendMode.ColorLightning),str(BlendMode.ColorLightning),str(BlendMode.ColorLightning)),
-    (blend_id + str(BlendMode.Shallow),str(BlendMode.Shallow),str(BlendMode.Shallow)),
-    (blend_id + str(BlendMode.Difference),str(BlendMode.Difference),str(BlendMode.Difference)),
-    (blend_id + str(BlendMode.Hue),str(BlendMode.Hue),str(BlendMode.Hue)),
-    (blend_id + str(BlendMode.Saturation),str(BlendMode.Saturation),str(BlendMode.Saturation)),
-    (blend_id + str(BlendMode.Color),str(BlendMode.Color),str(BlendMode.Color)),
-    (blend_id + str(BlendMode.Brightness),str(BlendMode.Brightness),str(BlendMode.Brightness))
-
+    
+    (blend_id + str(BlendMode.Normal),str(BlendMode.Normal),str(BlendMode.Normal),'ALIGN_JUSTIFY',0),
+    (blend_id + str(BlendMode.Darken),str(BlendMode.Darken),str(BlendMode.Darken),'ALIGN_JUSTIFY',1),
+    (blend_id + str(BlendMode.Multiply),str(BlendMode.Multiply),str(BlendMode.Multiply),'ALIGN_JUSTIFY',2),
+    (blend_id + str(BlendMode.ColorBurn),str(BlendMode.ColorBurn),str(BlendMode.ColorBurn),'ALIGN_JUSTIFY',3),
+    (blend_id + str(BlendMode.Deep),str(BlendMode.Deep),str(BlendMode.Deep),'ALIGN_JUSTIFY',4),
+    (blend_id + str(BlendMode.Lighten),str(BlendMode.Lighten),str(BlendMode.Lighten),'ALIGN_JUSTIFY',5),
+    (blend_id + str(BlendMode.Screen),str(BlendMode.Screen),str(BlendMode.Screen),'ALIGN_JUSTIFY',6),
+    (blend_id + str(BlendMode.ColorDodge),str(BlendMode.ColorDodge),str(BlendMode.ColorDodge),'ALIGN_JUSTIFY',7),
+    (blend_id + str(BlendMode.Shallow),str(BlendMode.Shallow),str(BlendMode.Shallow),'ALIGN_JUSTIFY',8),
+    (blend_id + str(BlendMode.Difference),str(BlendMode.Difference),str(BlendMode.Difference),'ALIGN_JUSTIFY',9),
+    (blend_id + str(BlendMode.Hue),str(BlendMode.Hue),str(BlendMode.Hue),'ALIGN_JUSTIFY',10),
+    (blend_id + str(BlendMode.Saturation),str(BlendMode.Saturation),str(BlendMode.Saturation),'ALIGN_JUSTIFY',11),
+    (blend_id + str(BlendMode.Color),str(BlendMode.Color),str(BlendMode.Color),'ALIGN_JUSTIFY',12),
+    (blend_id + str(BlendMode.Brightness),str(BlendMode.Brightness),str(BlendMode.Brightness),'ALIGN_JUSTIFY',13),
+    (blend_id + str(BlendMode.LinearBurn),str(BlendMode.LinearBurn),str(BlendMode.LinearBurn),'ALIGN_JUSTIFY',14), 
+    (blend_id + str(BlendMode.Overlay),str(BlendMode.Overlay),str(BlendMode.Overlay),'ALIGN_JUSTIFY',15),
+    (blend_id + str(BlendMode.HardLight),str(BlendMode.HardLight),str(BlendMode.HardLight),'ALIGN_JUSTIFY',16),
+    (blend_id + str(BlendMode.SoftLight),str(BlendMode.SoftLight),str(BlendMode.SoftLight),'ALIGN_JUSTIFY',17), 
+    (blend_id + str(BlendMode.VividLight),str(BlendMode.VividLight),str(BlendMode.VividLight),'ALIGN_JUSTIFY',18),
+    (blend_id + str(BlendMode.LinearLight),str(BlendMode.LinearLight),str(BlendMode.LinearLight),'ALIGN_JUSTIFY',19),
+    (blend_id + str(BlendMode.HardMix),str(BlendMode.HardMix),str(BlendMode.HardMix),'ALIGN_JUSTIFY',20) 
+  
+ 
 ]   
 
+# control
 class BlurType(enum.Enum):
     '''blur type :don't use Motion Blur'''
 
@@ -115,21 +151,25 @@ blur_id = str("BlurType_")
 
 
 blurTypes = [
-    (blur_id + str(BlurType.Gaussian),str(BlurType.Gaussian),str(BlurType.Gaussian)),
-    (blur_id + str(BlurType.Box),str(BlurType.Box),str(BlurType.Box)),
-    (blur_id + str(BlurType.Kawase),str(BlurType.Kawase),str(BlurType.Kawase)),
-    (blur_id + str(BlurType.Dual),str(BlurType.Dual),str(BlurType.Dual)),
-    (blur_id + str(BlurType.Bokeh),str(BlurType.Bokeh),str(BlurType.Bokeh)),
-    (blur_id + str(BlurType.TiltShift),str(BlurType.TiltShift),str(BlurType.TiltShift)),
-    (blur_id + str(BlurType.Iris),str(BlurType.Iris),str(BlurType.Iris)),
-    (blur_id + str(BlurType.Grainy),str(BlurType.Grainy),str(BlurType.Grainy)),
-    (blur_id + str(BlurType.Radial),str(BlurType.Radial),str(BlurType.Radial)),
-    (blur_id + str(BlurType.Directional),str(BlurType.Directional),str(BlurType.Directional))
+    (blur_id + str(BlurType.Gaussian),str(BlurType.Gaussian),0),
+    (blur_id + str(BlurType.Box),str(BlurType.Box),1),
+    (blur_id + str(BlurType.Kawase),str(BlurType.Kawase),2),
+    (blur_id + str(BlurType.Dual),str(BlurType.Dual),3),
+    (blur_id + str(BlurType.Bokeh),str(BlurType.Bokeh),4),
+    (blur_id + str(BlurType.TiltShift),str(BlurType.TiltShift),5),
+    (blur_id + str(BlurType.Iris),str(BlurType.Iris),6),
+    (blur_id + str(BlurType.Grainy),str(BlurType.Grainy),7),
+    (blur_id + str(BlurType.Radial),str(BlurType.Radial),8),
+    (blur_id + str(BlurType.Directional),str(BlurType.Directional),9)
     
 ]
 
 
-#@tips.expend
+
+
+
+#control
+#Expend
 class BakeTemplate(enum.Enum):
       '''expend  this will have other template
      
@@ -144,13 +184,11 @@ template_id = str('template_')
 
 bakeTemplates = [
 
-   (template_id +str(BakeTemplate.Base),str(BakeTemplate.Base),str(BakeTemplate.Base)),
+   (template_id +str(BakeTemplate.Base),str(BakeTemplate.Base),str(BakeTemplate.Base),'MOD_CLOTH',0),
 
 
 
 ]
-
-
 
 
 
@@ -172,7 +210,7 @@ class UVTextureLayer(bpy.types.PropertyGroup):
        name="blendMode",
        description="uv_texture layer blendMode",
        default= blend_id + str(BlendMode.Normal),
-       update= lambda self,context: None
+       
       
     ) 
 
@@ -184,24 +222,6 @@ class UVTextureLayer(bpy.types.PropertyGroup):
 
     )
 
-    isUseBlur = bpy.props.BoolProperty(
-
-       name="isUseBlur",
-       description="using blur is or not",
-       default=False
-
-
-    )
-
-    blurType = bpy.props.EnumProperty(
-
-      items= blurTypes,
-      name="blurType",
-      description="uv_texture layer blurType",
-      default= blur_id + str(BlurType.Null),
-      update= lambda self,context: None
-      
-    )
 
     bakeTemplateType = bpy.props.EnumProperty(
 
@@ -216,11 +236,25 @@ class UVTextureLayer(bpy.types.PropertyGroup):
     )
 
 
-    @classmethod
-    def bl_rna_get_subclass(cls, id: str, default=None) -> Struct:
-        return super().bl_rna_get_subclass(cls,id,default)
 
 
-    @classmethod
-    def bl_rna_get_subclass_py(cls, id: str, default=None):
-        super().bl_rna_get_subclass_py(cls,id,default)
+
+#expend
+class UVImage_stack_item(bpy.types.PropertyGroup):
+    
+    stackActive = bpy.props.BoolProperty(
+
+      name= 'stackActive',
+      description= 'stack_item_active',
+      default= True
+
+    )
+
+    # a pool of parameters for all controls
+
+
+
+
+
+
+

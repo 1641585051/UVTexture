@@ -1,12 +1,14 @@
-from this import d
-from unicodedata import name
+
 import bpy
 from bpy.types import Struct
+from .UVData import UIListData
+from ..UI import UV_UI
 
-from .UVListLayer import UVTextureLayer
+from .UVListLayer import UVTextureLayer,UVImage_stack_item
 
 
-defaultBakegroundObjName = "Null"
+
+
 
 
 class UVTextureOutPutConfig(bpy.types.PropertyGroup):
@@ -34,7 +36,7 @@ class UVTextureOutPutConfig(bpy.types.PropertyGroup):
 
         name='backgroundObjectName',
         description="uvTexture base object (backgroung obj)",
-        default=defaultBakegroundObjName,
+        default="",
         maxlen=128
          
 
@@ -158,37 +160,21 @@ class UVTree_list_item(bpy.types.PropertyGroup):
 
         name="active",
         description="layout is active?",
-        default=True,
-
+        default=True
+        
+    
     )
     
     layerName = bpy.props.StringProperty(
         
-        name="LayoutName",
+        name="ayerName",
         description="uv texture layout name",
         default= "Default",
-        maxlen= 64,
+        maxlen= 64
         
     )
 
-    uvTextureLayer = bpy.props.PointerProperty(
-
-       type=UVTextureLayer,
-       name="UVTextureLayer",
-       description="layer type"
-
-    )
-
-    @classmethod
-    def bl_rna_get_subclass(cls, id: str, default=None) -> Struct:
-        return super().bl_rna_get_subclass(cls,id,default)
-
-
-    @classmethod
-    def bl_rna_get_subclass_py(cls, id: str, default=None):
-        super().bl_rna_get_subclass_py(cls,id,default)
-
- 
+    
 class SystemData(bpy.types.PropertyGroup):
     ''' system data set '''
 
@@ -215,7 +201,33 @@ class SystemData(bpy.types.PropertyGroup):
 
 
 
+def InitOutPutConfig():
+    item = bpy.context.scene.uv_texture_output_config.add() 
+    item.textureSideLength = 1024
+    item.float32 = False
+    item.backgroundObjectName = ""
+    item.mappingSampleNums = 512
+
+
+
+def layerChooseIndexUpdate(self,context):
+    
+    index = getattr(self,'layer_choose_index')
+    scene = bpy.context.scene
+
+    if index > len(scene.uv_texture_list) and len(scene.uv_texture_list) != 0:
+        setattr(self,'layer_choose_index',len(scene.uv_texture_list))
+
+    #update Image stack
+
+    UV_UI.updateStack()
+    #...
+
+
 def UVTextureProperties():
+
+
+    bpy.types.Scene.uilistData = UIListData()
 
     # draw in
     bpy.types.Scene.uv_texture_list = bpy.props.CollectionProperty(
@@ -228,11 +240,22 @@ def UVTextureProperties():
     '''this datq need bind UI : draw in class(UVTexture_UL_List_uv_tree) from templateList func item'''  
 
 
+
+    bpy.types.Scene.uv_texture_settings = bpy.props.CollectionProperty(
+
+        type=UVTextureLayer,
+        name='uv_texture_settings',
+        description= "uv texture settings"
+
+
+        )
+ 
+
     bpy.types.Scene.uv_texture_list_index = bpy.props.IntProperty(
        
         name="uv_texture_list_index",
-        default= 0,
-        min= 0
+        default= -1,
+        min= -1
 
         )
     '''this datq need bind UI :  ''' 
@@ -277,3 +300,25 @@ def UVTextureProperties():
 
         )
     '''this datq need bind UI :  '''
+
+
+    bpy.types.Scene.layer_choose_index = bpy.props.IntProperty(
+          name= 'layer_choose_index',
+          description= " choose layer index",
+          default= -1,
+          min= -1,
+          update= layerChooseIndexUpdate
+                     
+        )
+
+    '''this datq need bind UI :  '''
+
+    bpy.types.Scene.image_stack_list = bpy.props.CollectionProperty(
+         
+         type=UVImage_stack_item,
+         name= 'image_stack_list',
+         description= 'UVTexture image stack list'
+
+        )
+    
+
