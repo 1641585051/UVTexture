@@ -1,10 +1,20 @@
 
 
+from typing import Any
 import bpy
 
 
 from ..dataDefine import DataProperty,UVListLayer
 
+from ..dataDefine.gpuDataDifine import gpu_photo_stack
+from ..tools import gpuEnv
+
+image_stack_Struct : dict[int,Any] = {}
+
+
+def getImageStackDict():
+
+    return image_stack_Struct
 
 
 class UITree_OT_eyetropper_CoverObjName(bpy.types.Operator):
@@ -41,19 +51,37 @@ class UITree_OT_createItem(bpy.types.Operator):
 
     def execute(self, context):
         
+
+        global image_stack_Struct
+
         scene = bpy.context.scene
 
         item = scene.uv_texture_list.add() 
         scene.uv_texture_list_index +=1
 
         if len(scene.uv_texture_output_config) == 0:
-           DataProperty.InitOutPutConfig()
+               DataProperty.InitOutPutConfig()
+
 
         config = scene.uv_bake_image_config.add()
         config.width = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config)) - 1].textureSideLength
         config.height = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config)) - 1].textureSideLength
         config.color = (0.0,0.0,0.0)
         config.float32 = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config.keys())) - 1].float32 
+
+        if gpuEnv.NVorAmd:
+                    # init CUDA context struct
+                image_stack_Struct[scene.uv_texture_list_index] = gpu_photo_stack.gpuImageStack(
+                                                                                                        
+                                                                     stackItemWidth = config.width,
+                                                                     stackItemheight= config.height,
+                                                                     is64Bit= config.float32
+
+                                                                  )
+        else:
+                    # AMD context struct 
+            pass
+
 
         item.active = True
 
@@ -95,10 +123,6 @@ class UITree_OT_deleteItem(bpy.types.Operator):
 
         return {"FINISHED"}
 
-
-class UITree_OT_moveItem(bpy.types.Operator):
-    bl_idname: str = "object.movelayer"
-    bl_label: str = "move layer"
 
 
     

@@ -37,14 +37,15 @@ classes : dict[int,Any] = {
   2: UV_UI.UVTexture_UL_List_uv_tree,
   3: UV_UI_Operators.UITree_OT_createItem,
   4: UV_UI_Operators.UITree_OT_deleteItem,
-  5: UV_UI_Operators.UITree_OT_moveItem, 
-  6: UV_operators.UVTexture_OT_InitOperator,
-  7: UV_operators.UVTexture_OT_ObjectUVMapping,
-  8: UVMappingOperator.UVTexture_OT_UvMappingInitDataOperator,
-  9: UVMappingOperator.UVTExture_OT_UvMappingCalculateProjectionValue,
-  10: UV_UI_Operators.UITree_OT_eyetropper_CoverObjName,
-  11: UV_UI.UVTexture_PT_layer_Image_stack,
-
+  5: UV_operators.UVTexture_OT_InitOperator,
+  6: UV_operators.UVTexture_OT_ObjectUVMapping,
+  7: UVMappingOperator.UVTexture_OT_UvMappingInitDataOperator,
+  8: UVMappingOperator.UVTExture_OT_UvMappingCalculateProjectionValue,
+  9: UV_UI_Operators.UITree_OT_eyetropper_CoverObjName,
+  10: UV_UI.UVTexture_PT_layer_Image_stack,
+  11: UV_operators.UVTexture_OT_Image_Stack_Compute,
+  12: UV_UI.UVTexture_PT_output_config,
+  
 
  
 ## expend
@@ -62,7 +63,8 @@ dataClasses = {
   2: DataProperty.UVBakeImageConfig,
   3: DataProperty.BakeExtendTemplateData,
   4: DataProperty.UVTextureOutPutConfig,
-  5: DataProperty.SystemData
+  5: DataProperty.SystemData,
+  6: UVListLayer.UVImage_stack_item,
   
 
 

@@ -229,27 +229,17 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       base.setFloatingInterval(floatingInterval) 
 
       
-      spArr : np.ndarray = np.array(object= np.split(ary= datanpArr,indices_or_sections= 3,axis=1),dtype=np.float32)
-      #  shape (3,4,n)
+      spArr : np.ndarray = np.array(object= np.split(ary= datanpArr,indices_or_sections= 3,axis=0),dtype=np.float32)
+      #  shape (n,4,3)
 
       materix : ti.MatrixField = ti.Matrix.field(n= 4,m=3,dtype= ti.float32,shape=(n,1))
-      # [  [[00,10,20,    [[00,10,20,
-      #      01,11,21,      01,11,21,
-      #      02,12,22,      02,12,22, .....
-      #      03,13,23]],    03,13,23]],          ]
-
-      temNDa : ti.MatrixNdarray = ti.MatrixNdarray(n=4 ,m= 3,dtype=ti.f32,shape=(n,1))
-      temNDa.from_numpy(arr=spArr)
-      
-      @ti.kernel
-      def fullMaterix():
-        for ind in ti.static(ti.grouped(materix)):
-           
-           materix[ind] = temNDa[ind[0],0]
-           # materix (3,4)(n,1) so grouped -> ind = [0,0]/[1,0]/ ... [n,0]
-           # ind[0] = 0/1/...n
-
-      fullMaterix()
+      # [  [[00,01,02,    [[00,01,02,
+      #      10,11,12,      10,11,12,
+      #      20,21,22,      20,21,22, .....
+      #      30,31,32]],    30,31,32]],          ]
+      spArr = spArr.reshape(shape= materix.shape)
+    
+      materix.from_numpy(arr =spArr)
 
       # the reason for not using mt-ray inspection is to avoid the 
       # appearance of singular four - sided faces
@@ -273,20 +263,14 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       # in (x,y,z)
       # 
 
-
-
-
-
-
-
       base.reRandSamplesMaterixInstance(sampleNums= sampleNums)
 
       base.fillSamples()
 
       points : ti.MatrixField = ti.Matrix.field(n= 3,m= 1,dtype= ti.f32,shape=(n,sampleNums))
       # [[0,0], ..... n
-      #  [0,1],
-      #  [0,2]],
+      #  [1,0],
+      #  [2,0]],
       #  .
       #  .
       #  .
@@ -296,9 +280,9 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       def RandPoints():
           for ind in ti.static(ti.grouped(materix)):
               # ind [0,0] / [1,0] ...
-              back_point0 = [[materix[ind][0,1]],
-                            [materix[ind][1,1]],
-                            [materix[ind][2,1]]]
+              back_point0 = ti.Vector([[materix[ind][0,1]],
+                                       [materix[ind][1,1]],
+                                       [materix[ind][2,1]]])
               back_point1 = ti.Vector([[materix[ind][0,2]],
                                        [materix[ind][1,2]],
                                        [materix[ind][2,2]]])
@@ -342,22 +326,22 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
       def NormalRayCapture():
           for ind in ti.static(ti.grouped(materix)):
 
-              mesh_point = [[materix[ind][0,0]],
-                            [materix[ind][1,0]],
-                            [materix[ind][2,0]]
-                            ]
-              back_point0 = [[materix[ind][0,1]],
-                             [materix[ind][1,1]],
-                             [materix[ind][2,1]]
-                             ]
-              back_point1 = [[materix[ind][0,2]],
-                             [materix[ind][1,2]],
-                             [materix[ind][2,2]]
-                             ]
-              back_point2 = [[materix[ind][0,3]],
-                             [materix[ind][1,3]],
-                             [materix[ind][2,3]]
-                             ]
+              mesh_point = ti.Vector([[materix[ind][0,0]],
+                                      [materix[ind][0,1]],
+                                      [materix[ind][0,2]]
+                                     ])
+              back_point0 = ti.Vector([[materix[ind][1,0]],
+                                       [materix[ind][1,1]],
+                                       [materix[ind][1,2]]
+                                      ])
+              back_point1 = ti.Vector([[materix[ind][2,0]],
+                                       [materix[ind][2,1]],
+                                       [materix[ind][2,2]]
+                                      ])
+              back_point2 = ti.Vector([[materix[ind][3,0]],
+                                       [materix[ind][3,1]],
+                                       [materix[ind][2,3]]
+                                      ])
 
               dirmaterix = ti.Vector(arr= mesh_point,dt= ti.f32)
               materix0 = ti.Vector(arr= back_point0,dt=ti.f32)   
@@ -406,11 +390,11 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
                      uv = base.samples[0,dotInd[1]] 
                      result[ind[0],0] = ti.Vector(
                            arr= [
-                                 [mesh_point[0,0],mesh_point[0,1],mesh_point[0,2]],
-                                 [back_point0[0,0],back_point1[0,1],back_point2[0,2]],
-                                 [back_point1[0,0],back_point1[0,1],back_point1[0,2]],
-                                 [back_point2[0,0],back_point2[0,1],back_point2[0,2]],
-                                 [uv[0,0]         ,uv[0,1]         ,               0] 
+                                 [mesh_point[0,0],mesh_point[1,0],mesh_point[2,0]],
+                                 [back_point0[0,0],back_point1[1,0],back_point2[2,0]],
+                                 [back_point1[0,0],back_point1[1,0],back_point1[2,0]],
+                                 [back_point2[0,0],back_point2[1,0],back_point2[2,0]],
+                                 [uv[0,0]         ,uv[1,0]         ,               0] 
                                 ])
 
       
@@ -450,12 +434,12 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
           datas = resultDatas[ind]
           meshPoint = mathutils.Vector()
-          meshPoint.xyz = (datas[0,0],datas[1,0],datas[2,0])
+          meshPoint.xyz = (datas[0,0],datas[0,1],datas[0,2])
           
           meshIndex : int = getIndex(mesh= mesh,point= meshPoint)
 
           rootbackPoint = mathutils.Vector()
-          rootbackPoint.xyz = (datas[0,1],datas[1,1],datas[2,1]) 
+          rootbackPoint.xyz = (datas[1,0],datas[1,1],datas[1,2]) 
           
           rootIndex :int = getIndex(mesh= backMesh,point= rootbackPoint)
           
@@ -464,7 +448,7 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
             rootuv.xy = backobjMap[rootIndex].xy # backobjMap value is Vector
 
           point1 = mathutils.Vector() 
-          point1.xyz = (datas[0,2],datas[1,2],datas[2,2])
+          point1.xyz = (datas[2,0],datas[2,1],datas[2,2])
         
           point1Index : int = getIndex(mesh= backMesh,point= point1)
           
@@ -473,7 +457,7 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
             point1uv.xy = backobjMap[point1Index].xy
 
           point2 = mathutils.Vector()
-          point2.xyz = (datas[0,3],datas[1,3],datas[2,3])
+          point2.xyz = (datas[3,0],datas[3,1],datas[3,2])
 
           point2Index : int = getIndex(mesh= backMesh, point= point2)
 
@@ -482,7 +466,7 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
             point2uv.xy = backobjMap[point2Index].xy
             
 
-          uv = [datas[0,4],datas[1,4]]
+          uv = [datas[4,0],datas[4,1]]
           
           #get three points uv
           #  

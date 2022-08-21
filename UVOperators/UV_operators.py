@@ -9,6 +9,33 @@ from . import BakeNodeTreeTemplate
 from ..UVMapping import base,UVMappingOperator
 
 
+
+class UVTexture_OT_Image_Stack_Compute(bpy.types.Operator):
+    '''All the image algorithms are concentrated here
+    
+       All processing layers are calculated sequentially and
+       the results are stored on image stack
+    '''
+
+    bl_idname :str = "object.stackcompute"
+    bl_label: str = "Performs processing operations on the image"
+
+    def check(self,context) -> bool:
+      ...
+
+   
+    def execute(self, context):
+
+       
+
+
+
+
+
+
+      ...
+
+
 class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
    ''' need run UVTExture_OT_UvMappingCalculateProjectionValue
        to get mapping result
@@ -20,9 +47,7 @@ class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
    def check(self,context) -> bool:
       ...
 
-   def invoke(self, context, event):
-      return super().invoke(context, event)
-
+   
    def execute(self, context):
       
       resultDatas = UVMappingOperator.getResult()

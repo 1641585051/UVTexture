@@ -1,7 +1,7 @@
 
 import gpu
 import operator
-import os 
+
 
 NV : str = 'NVIDIA'
 

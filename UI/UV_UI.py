@@ -4,19 +4,48 @@ from ..UVOperators import UV_operators
 
 
 
+class UVTexture_PT_output_config(bpy.types.Panel):
+    #bl_idname: str = "UVTexture_PT_output_configk"
+    bl_label: str = "output config"
+
+    bl_region_type :str = 'UI'
+    bl_space_type :str =  "VIEW_3D"
+    bl_parent_id: str = 'UVTexture_PT_Base'
+
+
+    def draw(self, context):
+
+      scene = bpy.context.scene
+      
+      layout = self.layout
+
+      one = layout.row()
+
+      
+
+
+
+
+      ...
+
+    ...
+
+
+
+
 def updateStack():
 
     ...
 
 
 class UVTexture_PT_layer_Image_stack(bpy.types.Panel):
-   bl_idname: str = "UVTexture_PT_layer_Image_stack"
+   #bl_idname: str = "UVTexture_PT_layer_Image_stack"
    bl_label: str = "image stack"
 
-   bl_category: str = 'stack'
+   #bl_category: str = 'stack'
    bl_region_type :str = 'UI'
    bl_space_type :str =  "VIEW_3D"
-
+   bl_parent_id: str = 'UVTexture_PT_Base'
 
    def draw(self, context):
 
@@ -37,7 +66,7 @@ class UVTexture_PT_layer_Image_stack(bpy.types.Panel):
 class UVTexture_UL_List_uv_tree(bpy.types.UIList):
    
    bl_idname: str = "UVTexture_List_uv_tree" 
-   layout_type = "DEFAULT"
+   #layout_type = "DEFAULT"
    use_filter_show: bool = True
    use_filter_sort_alpha: bool = True
 
