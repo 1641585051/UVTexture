@@ -1,9 +1,58 @@
 
 
 import bpy
-
+from ..dataDefine import DataProperty
 
 from . import UVListLayer
+from .gpuDataDifine import gpu_photo_stack
+from ..UVOperators import UV_UI_Operators
+from ..tools import gpuEnv
+
+
+def textureSideLengthUpdate(self,context):
+    
+    index = getattr(self,'layer_choose_index')
+    size = getattr(self,'textureSideLength')
+    
+    data = bpy.context.scene.uv_texture_output_config[index]
+    data.textureSideLength = size
+
+    item = bpy.context.scene.uv_bake_image_config[index]
+    item.width = size
+    item.height = size  
+
+    # get globel image stacks 
+    stacks = UV_UI_Operators.getImageStackDict()
+    if gpuEnv.NVorAmd:
+
+        stack : gpu_photo_stack.gpuImageStack = stacks[index]
+        stack.ResetStackSize(width= size,height= size)
+
+    else:
+       pass
+
+
+def float32Update(self,context):
+
+    index = getattr(self,'layer_choose_index')
+    float32 = getattr(self,'float32')
+    
+    data = bpy.context.scene.uv_texture_output_config[index]
+    data.float32 = float32  
+
+    item = bpy.context.scene.uv_bake_image_config[index]
+    item.float32 = float32
+ 
+
+def mappingSampleNumsUpdate(self,context):
+
+    index = getattr(self,'layer_choose_index')
+    mappingSampleNums = getattr(self,'mappingSampleNums')
+    
+    data = bpy.context.scene.uv_texture_output_config[index]
+    data.mappingSampleNums = mappingSampleNums
+
+
 
 def update(self,func):
     for ind in range(UIListData.layerMaxNum):
@@ -64,15 +113,27 @@ def bakeTemplateTypeUpdate(self,context):
 
 
 
-
-
-
-
 #image stack 
 def stackActiveUpdate(self,context):
 
     index = bpy.context.scene.layer_choose_index
     bpy.context.scene.image_stack_list[index].stackActive = getattr(self,'stackActive')
+
+
+def effectActive(self,context):
+
+    index = bpy.context.scene.layer_choose_index
+    istackIndex = bpy.context.scene.stack_choose_index
+    Istack = getattr(self,'Image_stack_list' + str(index))
+    Istack[istackIndex].effectActive = getattr(self,+ 'effectActive' +str(istackIndex))
+
+
+def effectTypeUpdate(self,context):
+
+    index = bpy.context.scene.layer_choose_index
+    istackIndex = bpy.context.scene.stack_choose_index
+    Istack = getattr(self,'Image_stack_list' + str(index))
+    Istack[istackIndex].effectType = getattr(self,+ 'effectType' +str(istackIndex))
 
 
 #------
@@ -88,6 +149,31 @@ class UIListData:
      
       listData : UIListData = bpy.types.Scene.uilistData
        
+      setattr(bpy.types.Scene,'textureSideLength',bpy.props.IntProperty(
+                                               name= 'textureSideLength',
+                                               default=1024,
+                                               min=512,
+                                               max=10240,
+                                               update= textureSideLengthUpdate
+                                               ))  
+
+      setattr(bpy.types.Scene,'float32',bpy.props.BoolProperty(
+                                               name= 'float32',
+                                               default= True,
+                                               update= float32Update
+ 
+                                               ))
+
+      setattr(bpy.types.Scene,'mappingSampleNums',bpy.props.IntProperty(
+                                               name= 'mappingSampleNums',
+                                               default= 128,
+                                               min=64,
+                                               max=1024,
+                                               update= mappingSampleNumsUpdate
+
+                                               ))
+
+
       for i in range(listData.layerMaxNum):
        #active (bool) to  uv_texture_list.active
          setattr(bpy.types.Scene,'active_' + str(i),bpy.props.BoolProperty(
@@ -137,6 +223,52 @@ class UIListData:
                                                update= stackActiveUpdate
                                                )) 
            
+
+      setattr(bpy.types.Scene,'stack_choose_index',bpy.props.IntProperty(
+                                               name= 'stack_choose_index',
+                                               default= -1,
+                                               min= -1
+                                               
+                                               ))
+
+
+
+      for i in range(listData.layerMaxNum):
+        # this attr not show UI
+        setattr(bpy.types.Scene,'Image_stack_list' + str(i),bpy.props.CollectionProperty(
+
+                                               type= DataProperty.UVImage_stack_item,  
+                                               name= 'Image_stack_list' + str(i),
+                                               description=  'image stack item data struct'  
+
+                                               ))
+      
+        # this attr not show UI   
+        setattr(bpy.types.Scene,'Image_stack_index'+ str(i),bpy.props.IntProperty(
+
+                                               name= 'Image_stack_index'+ str(i),
+                                               default= -1,
+                                               min= -1,
+                                                 
+                                               ))
+
+        setattr(bpy.types.Scene,'effectActive'+ str(i),bpy.props.BoolProperty(
+
+                                               name= 'effectActive'+ str(i),
+                                               default= True,
+                                               update= effectActive
+
+                                               ))   
+ 
+        setattr(bpy.types.Scene,'effectType' + str(i),bpy.props.EnumProperty(
+                                               
+                                               items= UVListLayer.alltypes,
+                                               name= 'effectType' + str(i),
+                                               default= UVListLayer.blur_id + str(UVListLayer.BlurType.Null),  
+                                               update= effectTypeUpdate    
+
+                                               ))
+
 
 
 

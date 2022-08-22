@@ -2,7 +2,6 @@
 import bpy
 from bpy.types import Struct
 from .UVData import UIListData
-from ..UI import UV_UI
 
 from .UVListLayer import UVTextureLayer,UVImage_stack_item
 
@@ -32,17 +31,7 @@ class UVTextureOutPutConfig(bpy.types.PropertyGroup):
 
         )
 
-    backgroundObjectName = bpy.props.StringProperty(
-
-        name='backgroundObjectName',
-        description="uvTexture base object (backgroung obj)",
-        default="",
-        maxlen=128
-         
-
-        )
-
-
+    
     mappingSampleNums = bpy.props.IntProperty(
 
         name='mappingSampleNums',
@@ -205,7 +194,6 @@ def InitOutPutConfig():
     item = bpy.context.scene.uv_texture_output_config.add() 
     item.textureSideLength = 1024
     item.float32 = False
-    item.backgroundObjectName = ""
     item.mappingSampleNums = 512
 
 
@@ -218,10 +206,7 @@ def layerChooseIndexUpdate(self,context):
     if index > len(scene.uv_texture_list) and len(scene.uv_texture_list) != 0:
         setattr(self,'layer_choose_index',len(scene.uv_texture_list))
 
-    #update Image stack
-
-    UV_UI.updateStack()
-    #...
+    
 
 
 def UVTextureProperties():

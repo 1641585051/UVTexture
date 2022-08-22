@@ -1,16 +1,13 @@
 
-
 from typing import Any
 
 from mars.core import base
-
-
-
 
 from mars import tensor as ten
 
 import numpy as np
 
+from ...dataDefine import ControlAlgorithms
 
 ##  CUDA  ##
 def returnConditionInZ(self,stackElementCount : int, shape : list[int],condition,step : int = 1,start : int = 0):
@@ -170,14 +167,15 @@ class gpuImageStack:
       # ...
       if data.width != self.__width or data.height != self.__height:
 
-         tempdata = ten.base.to_cpu(data.gpuImage) 
-         array : np.ndarray = tempdata.to_numpy()
-         from ....UVTexture.tools import uv_cv_tools 
-
-         scaleArr = uv_cv_tools.scaleImage(array= array,old_wdith= data.width,old_height= data.height,new_width= self.__width,new_height= self.__height)
-
-         data.gpuImage = ten.tensor(data= scaleArr,dtype= ten.float64,gpu=True)
-         data.gpuImage.execute()
+         #tempdata = ten.base.to_cpu(data.gpuImage) 
+         #array : np.ndarray = tempdata.to_numpy()
+         #from ....UVTexture.tools import uv_cv_tools 
+         #scaleArr = uv_cv_tools.scaleImage(array= array,old_wdith= data.width,old_height= data.height,new_width= self.__width,new_height= self.__height)
+         
+         scaleArr = ControlAlgorithms.CImageScaling(data.gpuImage,new_width= self.__width,new_height= self.__height)
+         # change uv_cv_tools scaleImage to ControlAlgorithms.CImageScaling
+        
+         data.gpuImage = scaleArr
       
       oldImage : ten.Tensor = self.__CompositeResults__()     
   
@@ -276,11 +274,34 @@ class gpuImageStack:
         ten.subtract(x1=image1,x2=image0,out=image1).execute()
         
 
+    def ResetStackSize(self,width,height):
 
+       self.__width = width
+       self.__height = height  
+       
+       self.__stackgpudata = ControlAlgorithms.CImageScaling(self.__stackgpudata,new_width= width,new_height= height)
+
+       for value in self.__stacks.values():
+           value.width = width
+           value.height = height
+           value.gpuImage = ControlAlgorithms.CImageScaling(value.gpuImage,new_width= width,new_height= height)
+
+
+       
 
 
 ##  CUDA  ##
        
 
 
-##  ...       
+##  AMD ##
+
+
+
+
+
+
+
+
+
+##  ----------  ##

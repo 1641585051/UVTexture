@@ -45,6 +45,11 @@ classes : dict[int,Any] = {
   10: UV_UI.UVTexture_PT_layer_Image_stack,
   11: UV_operators.UVTexture_OT_Image_Stack_Compute,
   12: UV_UI.UVTexture_PT_output_config,
+  13: UV_UI_Operators.UVTree_OT_change_choose_index_by_Roller,
+  14: UV_UI.UVTexture_UL_List_Image_stack, 
+  15: UV_UI_Operators.UVTree_OT_recalculate_image_stack,
+
+
   
 
  

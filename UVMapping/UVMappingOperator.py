@@ -1,7 +1,5 @@
 
 import sys
-from this import d
-from .base import rePoint
 import bpy
 import bmesh
 import mathutils

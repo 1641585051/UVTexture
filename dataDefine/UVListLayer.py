@@ -3,7 +3,7 @@ import enum
 import bpy
 import enum
 
-from bpy.types import Struct
+
 
 
 # control
@@ -79,36 +79,58 @@ class BlendMode(enum.Enum):
     HardMix = 'hardMix'
     '''实色混合'''
 
+    Exclusion = 'exclusion'
+    '''排除'''
+
+    Subtract = 'subtract'
+    '''减去'''
+
+    Divide = 'divide'
+    '''划分'''
 
 
 blend_id = str("BlendMode_")
 
 modes = [
-    
+
     (blend_id + str(BlendMode.Normal),str(BlendMode.Normal),str(BlendMode.Normal),'ALIGN_JUSTIFY',0),
     (blend_id + str(BlendMode.Darken),str(BlendMode.Darken),str(BlendMode.Darken),'ALIGN_JUSTIFY',1),
     (blend_id + str(BlendMode.Multiply),str(BlendMode.Multiply),str(BlendMode.Multiply),'ALIGN_JUSTIFY',2),
     (blend_id + str(BlendMode.ColorBurn),str(BlendMode.ColorBurn),str(BlendMode.ColorBurn),'ALIGN_JUSTIFY',3),
-    (blend_id + str(BlendMode.Deep),str(BlendMode.Deep),str(BlendMode.Deep),'ALIGN_JUSTIFY',4),
-    (blend_id + str(BlendMode.Lighten),str(BlendMode.Lighten),str(BlendMode.Lighten),'ALIGN_JUSTIFY',5),
-    (blend_id + str(BlendMode.Screen),str(BlendMode.Screen),str(BlendMode.Screen),'ALIGN_JUSTIFY',6),
-    (blend_id + str(BlendMode.ColorDodge),str(BlendMode.ColorDodge),str(BlendMode.ColorDodge),'ALIGN_JUSTIFY',7),
-    (blend_id + str(BlendMode.Shallow),str(BlendMode.Shallow),str(BlendMode.Shallow),'ALIGN_JUSTIFY',8),
-    (blend_id + str(BlendMode.Difference),str(BlendMode.Difference),str(BlendMode.Difference),'ALIGN_JUSTIFY',9),
-    (blend_id + str(BlendMode.Hue),str(BlendMode.Hue),str(BlendMode.Hue),'ALIGN_JUSTIFY',10),
-    (blend_id + str(BlendMode.Saturation),str(BlendMode.Saturation),str(BlendMode.Saturation),'ALIGN_JUSTIFY',11),
-    (blend_id + str(BlendMode.Color),str(BlendMode.Color),str(BlendMode.Color),'ALIGN_JUSTIFY',12),
-    (blend_id + str(BlendMode.Brightness),str(BlendMode.Brightness),str(BlendMode.Brightness),'ALIGN_JUSTIFY',13),
-    (blend_id + str(BlendMode.LinearBurn),str(BlendMode.LinearBurn),str(BlendMode.LinearBurn),'ALIGN_JUSTIFY',14), 
-    (blend_id + str(BlendMode.Overlay),str(BlendMode.Overlay),str(BlendMode.Overlay),'ALIGN_JUSTIFY',15),
-    (blend_id + str(BlendMode.HardLight),str(BlendMode.HardLight),str(BlendMode.HardLight),'ALIGN_JUSTIFY',16),
-    (blend_id + str(BlendMode.SoftLight),str(BlendMode.SoftLight),str(BlendMode.SoftLight),'ALIGN_JUSTIFY',17), 
-    (blend_id + str(BlendMode.VividLight),str(BlendMode.VividLight),str(BlendMode.VividLight),'ALIGN_JUSTIFY',18),
-    (blend_id + str(BlendMode.LinearLight),str(BlendMode.LinearLight),str(BlendMode.LinearLight),'ALIGN_JUSTIFY',19),
-    (blend_id + str(BlendMode.HardMix),str(BlendMode.HardMix),str(BlendMode.HardMix),'ALIGN_JUSTIFY',20) 
-  
- 
-]   
+    #(blend_id + str(BlendMode.Deep),str(BlendMode.Deep),str(BlendMode.Deep),'ALIGN_JUSTIFY',*),
+    (blend_id + str(BlendMode.Lighten),str(BlendMode.Lighten),str(BlendMode.Lighten),'ALIGN_JUSTIFY',4),
+    (blend_id + str(BlendMode.Screen),str(BlendMode.Screen),str(BlendMode.Screen),'ALIGN_JUSTIFY',5),
+    (blend_id + str(BlendMode.ColorDodge),str(BlendMode.ColorDodge),str(BlendMode.ColorDodge),'ALIGN_JUSTIFY',6),
+    #(blend_id + str(BlendMode.Shallow),str(BlendMode.Shallow),str(BlendMode.Shallow),'ALIGN_JUSTIFY',*),
+    (blend_id + str(BlendMode.Difference),str(BlendMode.Difference),str(BlendMode.Difference),'ALIGN_JUSTIFY',7),
+    #(blend_id + str(BlendMode.Hue),str(BlendMode.Hue),str(BlendMode.Hue),'ALIGN_JUSTIFY',*),
+    #(blend_id + str(BlendMode.Saturation),str(BlendMode.Saturation),str(BlendMode.Saturation),'ALIGN_JUSTIFY',*),
+    #(blend_id + str(BlendMode.Color),str(BlendMode.Color),str(BlendMode.Color),'ALIGN_JUSTIFY',*),
+    #(blend_id + str(BlendMode.Brightness),str(BlendMode.Brightness),str(BlendMode.Brightness),'ALIGN_JUSTIFY',*),
+    (blend_id + str(BlendMode.LinearDodge),str(BlendMode.LinearDodge),str(BlendMode.LinearDodge),'ALIGN_JUSTIFY',8), 
+    (blend_id + str(BlendMode.LinearBurn),str(BlendMode.LinearBurn),str(BlendMode.LinearBurn),'ALIGN_JUSTIFY',9), 
+    (blend_id + str(BlendMode.Overlay),str(BlendMode.Overlay),str(BlendMode.Overlay),'ALIGN_JUSTIFY',10),
+    (blend_id + str(BlendMode.HardLight),str(BlendMode.HardLight),str(BlendMode.HardLight),'ALIGN_JUSTIFY',11),
+    (blend_id + str(BlendMode.SoftLight),str(BlendMode.SoftLight),str(BlendMode.SoftLight),'ALIGN_JUSTIFY',12), 
+    (blend_id + str(BlendMode.VividLight),str(BlendMode.VividLight),str(BlendMode.VividLight),'ALIGN_JUSTIFY',13),
+    (blend_id + str(BlendMode.LinearLight),str(BlendMode.LinearLight),str(BlendMode.LinearLight),'ALIGN_JUSTIFY',14),
+    (blend_id + str(BlendMode.PinLight),str(BlendMode.PinLight),str(BlendMode.PinLight),'ALIGN_JUSTIFY',15),
+    (blend_id + str(BlendMode.HardMix),str(BlendMode.HardMix),str(BlendMode.HardMix),'ALIGN_JUSTIFY',16),
+    (blend_id + str(BlendMode.Exclusion),str(BlendMode.Exclusion),str(BlendMode.Exclusion),'ALIGN_JUSTIFY',17), 
+    (blend_id + str(BlendMode.Subtract),str(BlendMode.Subtract),str(BlendMode.Subtract),'ALIGN_JUSTIFY',18), 
+    (blend_id + str(BlendMode.Divide),str(BlendMode.Divide),str(BlendMode.Divide),'ALIGN_JUSTIFY',19), 
+    
+    # Deep,Shallow,Hue,Saturation,Color,Brightness
+    # these are not intended to be achieved
+    # there are two reasons for this 
+    # 1). Deep and Shallow requires merging the channels of the picture,
+    # which is not in line with our GPU computing philosophy
+    # 2). Hue,Saturation,Color and Brightness uses the HSB color space,
+    # whitch is not compatible with the wider RGB color space we expect to
+    # use ,and to avoid conversion, does not use the HSB-related algorithm 
+    # from Photoshop 
+
+ ]   
 
 # control
 class BlurType(enum.Enum):
@@ -151,21 +173,49 @@ blur_id = str("BlurType_")
 
 
 blurTypes = [
-    (blur_id + str(BlurType.Gaussian),str(BlurType.Gaussian),0),
-    (blur_id + str(BlurType.Box),str(BlurType.Box),1),
-    (blur_id + str(BlurType.Kawase),str(BlurType.Kawase),2),
-    (blur_id + str(BlurType.Dual),str(BlurType.Dual),3),
-    (blur_id + str(BlurType.Bokeh),str(BlurType.Bokeh),4),
-    (blur_id + str(BlurType.TiltShift),str(BlurType.TiltShift),5),
-    (blur_id + str(BlurType.Iris),str(BlurType.Iris),6),
-    (blur_id + str(BlurType.Grainy),str(BlurType.Grainy),7),
-    (blur_id + str(BlurType.Radial),str(BlurType.Radial),8),
-    (blur_id + str(BlurType.Directional),str(BlurType.Directional),9)
+    (blur_id + str(BlurType.Null),str(BlurType.Null),str(BlurType.Null),'ALIGN_JUSTIFY',0),
+    (blur_id + str(BlurType.Gaussian),str(BlurType.Gaussian),str(BlurType.Gaussian),'ALIGN_JUSTIFY',0),
+    (blur_id + str(BlurType.Box),str(BlurType.Box),str(BlurType.Box),'ALIGN_JUSTIFY',1),
+    #(blur_id + str(BlurType.Kawase),str(BlurType.Kawase),2),
+    #(blur_id + str(BlurType.Dual),str(BlurType.Dual),3),
+    #(blur_id + str(BlurType.Bokeh),str(BlurType.Bokeh),4),
+    #(blur_id + str(BlurType.TiltShift),str(BlurType.TiltShift),5),
+    #(blur_id + str(BlurType.Iris),str(BlurType.Iris),6),
+    #(blur_id + str(BlurType.Grainy),str(BlurType.Grainy),7),
+    #(blur_id + str(BlurType.Radial),str(BlurType.Radial),8),
+    #(blur_id + str(BlurType.Directional),str(BlurType.Directional),9)
     
+    # There are many fuzzy algorithms that do not have a good implementation,
+    # so they are not displayed,and secondly,due to insufficient personalability,
+    # for the time being only the Gaussion and box are available for
+    # the time being 
+ 
+
+
+
 ]
 
 
 
+
+#Expend
+class Stroke(enum.Enum):
+
+     Base = 'base'
+
+
+
+strock_id = str('Strock_')
+
+
+strocks = [
+
+    (strock_id + str(Stroke.Base),str(Stroke.Base),str(Stroke.Base),'META_PLANE',0),
+
+
+
+
+]
 
 
 #control
@@ -229,7 +279,7 @@ class UVTextureLayer(bpy.types.PropertyGroup):
       name= "bakeTemplate",
       description= 'bake image template make node tree func',
       default= template_id + str(BakeTemplate.Base),
-      update= lambda self,context: None
+     
 
 
 
@@ -238,6 +288,9 @@ class UVTextureLayer(bpy.types.PropertyGroup):
 
 
 
+#expend (all effect enum)
+alltypes : list = blurTypes + strocks
+                  
 
 #expend
 class UVImage_stack_item(bpy.types.PropertyGroup):
@@ -252,7 +305,13 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
 
     # a pool of parameters for all controls
 
+    effectType = bpy.props.EnumProperty(
 
+      items= alltypes,
+      name= 'effectType',
+      description= 'all effect enums'
+
+    )
 
 
 

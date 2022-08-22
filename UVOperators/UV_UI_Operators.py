@@ -17,6 +17,55 @@ def getImageStackDict():
     return image_stack_Struct
 
 
+
+class UVTree_OT_recalculate_image_stack(bpy.types.Operator):
+    ''' recalculate all image stack effect '''
+
+
+    bl_idname: str = "object.recalculateimagestack"
+    bl_label: str = "recalculate image stack"
+    
+    def check(self, context) -> bool:
+        ...
+
+
+    def execute(self, context):
+        
+        
+        
+        
+        return {"FINISHED"}
+
+
+
+
+class UVTree_OT_change_choose_index_by_Roller(bpy.types.Operator):
+    '''ctrl + left mouse is next layer,
+       left mouse is before layer
+    '''
+
+
+    bl_idname: str = "object.changechooseindexbyroller"
+    bl_label: str = "set choose index Ui element by roller"
+    
+    def check(self, context) -> bool:
+       return True
+
+    def invoke(self, context, event):
+       
+       if event.ctrl and event.type == 'LEFTMOUSE' :
+            
+          bpy.context.scene.layer_choose_index += 1
+      
+       elif event.type == 'LEFTMOUSE':
+          
+          bpy.context.scene.layer_choose_index -= 1
+
+       return {"FINISHED"}
+    
+
+
+
 class UITree_OT_eyetropper_CoverObjName(bpy.types.Operator):
  
     bl_idname: str = "object.eyetropper_coverobjname"
