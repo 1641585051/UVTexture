@@ -1,6 +1,7 @@
 
 from this import d
 import bpy
+from ..dataDefine import UVListLayer
 from ..UVOperators import UV_operators
 
 
@@ -40,15 +41,7 @@ class UVTexture_UL_List_Image_stack(bpy.types.UIList):
 
    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index, flt_flag):
       
-      #scene = bpy.context.scene
-
       row = layout.row()
-
-      #layerIndex = scene.layer_choose_index
- 
-      #stack = getattr(scene,'Image_stack_list' + str(layerIndex))
-
-      #effectType = stack[index].effectType
 
       row.operator('object.recalculateimagestack',text= "",icon= 'FILE_REFRESH')
 
@@ -59,8 +52,45 @@ class UVTexture_UL_List_Image_stack(bpy.types.UIList):
       
       row2.prop(data= data,property= 'effectType' + str(index),text="",icon= 'FILE_IMAGE')
 
-       
 
+class UVTexture_PT_stack_effect(bpy.types.Panel):
+      
+      bl_label: str = "effect panel"
+
+      bl_region_type :str = 'UI'
+      bl_space_type :str =  "VIEW_3D"
+      bl_parent_id: str = 'UVTexture_PT_layer_Image_stack'
+
+      def draw(self, context):
+         
+         scene = bpy.context.scene
+
+         layout = self.layout
+
+         row1 = layout.row()
+          
+         row1.label(text= "effects")
+
+         row2 = layout.row() 
+         row2.prop(data= scene,property= 'stackActive',text="")  
+         row2.prop(data= scene,property= 'stack_choose_index',text='') 
+
+         row2.operator(operator= 'object.effectchangechooseindex',text="",icon= 'MOUSE_LMB')
+ 
+         row4 = layout.row()
+         if getattr(scene,'stack_choose_index') >= 0:
+            
+            layerIndex = scene.layer_choose_index
+ 
+            stack = getattr(scene,'Image_stack_list' + str(layerIndex))
+
+            effectType = stack[getattr(scene,'stack_choose_index')].effectType
+
+            UVListLayer.drawfuncs[effectType](scene,row4,context)
+            
+
+
+         
 
 def updateStack(row : bpy.types.UILayout):
 
@@ -84,7 +114,7 @@ def updateStack(row : bpy.types.UILayout):
 
 
 class UVTexture_PT_layer_Image_stack(bpy.types.Panel):
-   #bl_idname: str = "UVTexture_PT_layer_Image_stack"
+   bl_idname: str = "UVTexture_PT_layer_Image_stack"
    bl_label: str = "image stack"
 
    #bl_category: str = 'stack'
@@ -104,13 +134,15 @@ class UVTexture_PT_layer_Image_stack(bpy.types.Panel):
       row2 = layout.row()
       row2.prop(scene,'layer_choose_index',text="eding index",icon= 'FILE_IMAGE')
 
-      row2.operator(operator= 'object.changechooseindexbyroller',text="",icon= 'MOUSE_MMB')
+      row2.operator(operator= 'object.changechooseindex',text="",icon= 'MOUSE_LMB')
 
       row3 = layout.row()
 
       updateStack(row= row3) 
   
+      subrow3 = row3.column()
 
+      #subrow3.operator() 
 
 
 
@@ -201,6 +233,7 @@ class UVTexture_PT_Base(bpy.types.Panel):
          )
 
       subrow = listrow.column()   
+
       subrow.operator(operator= 'object.createlayer',text= "",icon="ADD")
       
       subrow.operator(operator= 'object.deletelayer',text="",icon="REMOVE")

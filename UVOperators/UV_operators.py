@@ -1,13 +1,20 @@
+from distutils import core
+import os
 import bpy
 import bmesh
 import sys
 import mathutils
 
+import numpy as np
+import cv2
+
 from ..dataDefine import DataProperty
-from . import BakeNodeTreeTemplate
+from . import BakeNodeTreeTemplate,UV_UI_Operators
 
 from ..UVMapping import base,UVMappingOperator
 
+from ..tools import gpuEnv
+from ..dataDefine.gpuDataDifine import gpu_photo_stack
 
 
 class UVTexture_OT_Image_Stack_Compute(bpy.types.Operator):
@@ -152,7 +159,8 @@ class UVTexture_OT_UVLayerBakeUseTemplate0Operator(bpy.types.Operator):
       this Operator use Bake Template0 (BakeNodeTreeTemplate.BakeNodeTreeTemplate0 func)
       and only use GPU
    '''
-   
+   bl_options = 'BLOCKING'
+
    bl_idname :str = "object.UVLayerBake"
    bl_label: str = "bake uv layer"
 
@@ -172,6 +180,8 @@ class UVTexture_OT_UVLayerBakeUseTemplate0Operator(bpy.types.Operator):
       return super().invoke(context, event)
 
    def execute(self, context):
+
+      scene = bpy.context.scene
 
       #get datas
       index = 0
@@ -206,6 +216,8 @@ class UVTexture_OT_UVLayerBakeUseTemplate0Operator(bpy.types.Operator):
                        float_buffer= imageConfig.isFloat32
 
                    )
+               image.generated_color = list(imageConfig.colorData)
+
          else:
                image = bpy.data.images[self.bakeImageName]
 
@@ -217,11 +229,39 @@ class UVTexture_OT_UVLayerBakeUseTemplate0Operator(bpy.types.Operator):
                                                        )
 
          bpy.context.view_layer.objects.active = obj
+         
          bpy.ops.object.bake(type='EMIT',target='IMAGE_TEXTURES', save_mode='INTERNAL')
+         # bake may be use thread ,if not The following code will work
+         
+         # Save the photo to the gpu_image_stack
+         stackDict =  UV_UI_Operators.getImageStackDict()
+
+         if gpuEnv.NVorAmd:
+            stack : gpu_photo_stack.gpuImageStack = stackDict[scene.layer_choose_index]
+            
+            path = os.path.dirname(__file__) + os.sep + 'temp_' + image.name + '.jpg'
+
+            image.save_render(filepath= path ,scene= scene)
+
+            saveImage = cv2.imread(filename= path)
+
+            saveImage : np.ndarray = np.asarray(object= saveImage[:,:,:],dtype= np.float32)
+
+            if saveImage.shape[2] == 3:
+                alpha = np.full(shape= (saveImage.shape[0],saveImage.shape[1]),fill_value= 255.0,dtype= np.float32)
+                saveImage = np.hstack((saveImage,alpha))
+
+            stack.SetBakeImage(image= saveImage,index= index,backgroundColor= imageConfig.colorData)
+
+            os.remove(path= path)
+
+         else:
+
+            pass
 
       
       else:
-         raise Exception("bakeImageName is not LayerName")
+         raise RuntimeWarning("bakeImageName is not LayerName")
          
 
    

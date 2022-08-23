@@ -1,4 +1,5 @@
 import enum
+from typing import Any
 
 import bpy
 import enum
@@ -289,8 +290,149 @@ class UVTextureLayer(bpy.types.PropertyGroup):
 
 
 #expend (all effect enum)
-alltypes : list = blurTypes + strocks
-                  
+alltypes : list = blurTypes + strocks    # + ......
+                   
+
+def rUpdate(self,context):
+   
+   scene = bpy.context.scene
+   stack = getattr(scene,'Image_stack_list' + str(scene.layer_choose_index))
+   stack[scene.stack_choose_index].r = getattr(self,'Efr')
+
+
+def xblurUpdate(self,context):
+   
+   scene = bpy.context.scene
+   stack = getattr(scene,'Image_stack_list' + str(scene.layer_choose_index))
+   stack[scene.stack_choose_index].xblur = getattr(self,'Efxblur')
+
+
+def yblurUpdate(self,context):
+
+   scene = bpy.context.scene
+   stack = getattr(scene,'Image_stack_list' + str(scene.layer_choose_index))
+   stack[scene.stack_choose_index].yblur = getattr(self,'Efyblur')
+
+
+def strockweithUpdate(self,context):
+
+   scene = bpy.context.scene
+   stack = getattr(scene,'Image_stack_list' + str(scene.layer_choose_index))
+   stack[scene.stack_choose_index].strockweith = getattr(self,'Efstrockweith')
+
+
+def colorUpdate(self,context):
+
+   scene = bpy.context.scene
+   stack = getattr(scene,'Image_stack_list' + str(scene.layer_choose_index))
+   stack[scene.stack_choose_index].color = getattr(self,'Efcolor')
+
+
+#expend UVImage_stack_item
+def regisiterItemAttrs():
+
+   setattr(bpy.types.Scene,'Efr',bpy.props.FloatProperty(
+
+                                name= 'Efr',
+                                default= 1.50,
+                                min= 0.0,
+                                update= rUpdate
+
+                              ))
+
+   setattr(bpy.types.Scene,'Efxblur',bpy.props.IntProperty(
+
+                                name='Efxblur',
+                                default= 1,
+                                min= 0, 
+                                update= xblurUpdate 
+
+                              ))
+
+   setattr(bpy.types.Scene,'Efyblur',bpy.props.IntProperty(
+
+                                name= 'Efyblur',
+                                default= 1,
+                                min= 0,
+                                update= yblurUpdate
+
+                              ))
+
+   setattr(bpy.types.Scene,'Efstrockweith',bpy.props.IntProperty(
+
+                                name= 'Efstrockweith',
+                                default= 1,
+                                min= 0,
+                                update= strockweithUpdate
+ 
+                              ))
+
+   setattr(bpy.types.Scene,'Efcolor',bpy.props.FloatVectorProperty(
+
+                                name= 'Efcolor',
+                                default= (0.0,0.0,0.0),
+                                min= 0.0,
+                                max= 255.0,
+                                update= colorUpdate
+
+                               ))
+
+# expend
+# draw funcs
+
+
+def NullDraw(scene,layout : bpy.types.UILayout,context):
+    
+    box = layout.box()
+    row1 = box.row()
+    row1.label(text= 'null')
+
+
+def GaussianDraw(scene,layout : bpy.types.UILayout,context):
+
+    box = layout.box()
+    row1 = box.row()
+    row1.prop(data= scene,property= 'Efr',text='GaussianRadius')
+   
+def BoxDraw(scene,layout : bpy.types.UILayout,context):
+
+    box = layout.box()
+    row1 = box.row()
+    row1.prop(data= scene,property= 'Efxblur',text= 'box xblur') 
+    row1.prop(data= scene,property= 'Efyblur',text= 'box yblur')
+
+
+def StrockBaseDraw(scene,layout : bpy.types.UILayout,context):
+
+    box = layout.box()
+    row1 = box.row()
+    row1.prop(data= scene,property= 'Efstrockweith',text= 'strock weith')
+    row1.prop(data= scene,property= 'Efcolor',text= 'strock color')
+
+
+
+# expend
+# enum and draw func dict 
+drawfuncs : dict[str,Any] = {
+
+   blur_id + str(BlurType.Null) : NullDraw,
+   blur_id + str(BlurType.Gaussian) : GaussianDraw,
+   blur_id + str(BlurType.Box) : BoxDraw,
+   strock_id + str(Stroke.Base) : StrockBaseDraw,
+
+
+
+    
+
+
+}
+
+
+
+
+
+# --------------------
+
 
 #expend
 class UVImage_stack_item(bpy.types.PropertyGroup):
@@ -303,8 +445,6 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
 
     )
 
-    # a pool of parameters for all controls
-
     effectType = bpy.props.EnumProperty(
 
       items= alltypes,
@@ -313,7 +453,50 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
 
     )
 
+    # a pool of parameters for all controls
 
+    # Gaussian
+    r = bpy.props.FloatProperty(
 
+      name= 'r',
+      default= 1.50,
+      min= 0.0
 
+    )
 
+    # Box
+    xblur = bpy.props.IntProperty(
+
+      name='xblur',
+      default= 1,
+      min= 0
+
+    )
+
+    # Box
+    yblur = bpy.props.IntProperty(
+
+      name= 'yblur',
+      default= 1,
+      min= 0
+
+    )
+
+    # Strock Base
+    strockweith = bpy.props.IntProperty(
+
+      name= 'strockweith',
+      default= 1,
+      min= 0
+
+    )
+    
+    # Strock Base
+    color = bpy.props.FloatVectorProperty(
+
+      name= 'color',
+      default= (0.0,0.0,0.0),
+      min= 0.0,
+      max= 255.0
+
+    )

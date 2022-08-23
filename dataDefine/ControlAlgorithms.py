@@ -694,6 +694,16 @@ def boxesForGauss(sigma, n):  # standard deviation, number of boxes
 # Gaussian
 def CGaussian(a : ten.Tensor,r :np.float32):
 
+
+    maskBool = ten.full(shape= a.shape,fill_value= False,gpu= True)
+    maskBool.execute()
+
+    maskValue = ten.full(shape= a.shape,fill_value= -1.0,dtype= np.float32,gpu= True) 
+    maskValue.execute()
+
+    ten.equal(x1= a,x2= -1.0,out= maskBool).execute()
+
+
     channels : list[ten.Tensor] = ten.dsplit(a= a,indices_or_sections= 3)
     channels.execute()
 
@@ -827,7 +837,9 @@ def CGaussian(a : ten.Tensor,r :np.float32):
 
     re = ten.tensor(data= targetField.to_numpy().reshape(a.shape),gpu= True)
     re.execute()
-    
+
+    ten.take(a= maskValue, indices= maskBool,out=re).execute()
+
     return re 
 
 
@@ -841,7 +853,15 @@ def CBoxBlur(a : ten.Tensor,xblur : np.uint16,yblur : np.uint16):
 
     shape = a.shape
 
-    channels : list[ten.Tensor] = ten.dsplit(a= a,indices_or_sections= 3)
+    maskBool = ten.full(shape= shape,fill_value= False,gpu= True)
+    maskBool.execute()
+
+    maskValue = ten.full(shape= shape,fill_value= -1.0,dtype= np.float32,gpu= True) 
+    maskValue.execute()
+
+    ten.equal(x1= a,x2= -1.0,out= maskBool).execute()
+
+    channels = ten.dsplit(a= a,indices_or_sections= 3)
     channels.execute()
 
     ndarrs = list(channel.to_numpy() for channel in channels)
@@ -914,6 +934,8 @@ def CBoxBlur(a : ten.Tensor,xblur : np.uint16,yblur : np.uint16):
 
     re = ten.tensor(data= targetField.to_numpy().reshape(a.shape),gpu= True)
     re.execute()
+ 
+    ten.take(a= maskValue, indices= maskBool,out=re).execute()
 
     return re
 
@@ -964,9 +986,16 @@ blurModes = {
 ##-----------------------Strock-------------------------------##
 
 
-# .....
-
+# Strock Base
 def CStrockBase(a : ten.Tensor,strockweith : int,color : mathutils.Vector):
+
+    maskBool = ten.full(shape= a.shape,fill_value= False,gpu= True)
+    maskBool.execute()
+
+    maskValue = ten.full(shape= a.shape,fill_value= -1.0,dtype= np.float32,gpu= True) 
+    maskValue.execute()
+
+    ten.equal(x1= a,x2= -1.0,out= maskBool).execute()
 
     backTen : ten.Tensor = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
     backTen.execute()
@@ -974,7 +1003,7 @@ def CStrockBase(a : ten.Tensor,strockweith : int,color : mathutils.Vector):
     backIndices = ten.full(shape= a.shape,fill_value= False,gpu= True)
     backIndices.execute()
   
-    ten.equal(x1 = a,x2= -1,out= backIndices).execute()
+    ten.equal(x1 = a,x2= -1.0,out= backIndices).execute()
     # -1 is mask value 
     ten.take(a= a, indices= backIndices,out= backTen).execute()
 
@@ -1171,6 +1200,8 @@ def CStrockBase(a : ten.Tensor,strockweith : int,color : mathutils.Vector):
     re = ten.tensor(data= maskImg,dtype= np.float32,gpu=True)
     re.execute()
 
+    ten.take(a= maskValue, indices= maskBool,out=re).execute()
+
     return re
 
 
@@ -1258,7 +1289,7 @@ def CImageScaling(a : ten.Tensor,new_width :int,new_height : int ):
    
 
 #expend all effect funcs 
-all_effect_funcs = blurModes | storks 
+all_effect_funcs = blurModes | storks    # | ....
 
 
 #-------------------------------------------------------------#

@@ -298,12 +298,6 @@ def UVTextureProperties():
 
     '''this datq need bind UI :  '''
 
-    bpy.types.Scene.image_stack_list = bpy.props.CollectionProperty(
-         
-         type=UVImage_stack_item,
-         name= 'image_stack_list',
-         description= 'UVTexture image stack list'
-
-        )
+ 
     
 

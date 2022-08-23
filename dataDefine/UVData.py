@@ -117,7 +117,10 @@ def bakeTemplateTypeUpdate(self,context):
 def stackActiveUpdate(self,context):
 
     index = bpy.context.scene.layer_choose_index
-    bpy.context.scene.image_stack_list[index].stackActive = getattr(self,'stackActive')
+    
+    Istack = getattr(self,'Image_stack_list' + str(index))
+    for i in len(Istack):
+       Istack[i].stackActive = getattr(self,'stackActive')
 
 
 def effectActive(self,context):
@@ -134,6 +137,9 @@ def effectTypeUpdate(self,context):
     istackIndex = bpy.context.scene.stack_choose_index
     Istack = getattr(self,'Image_stack_list' + str(index))
     Istack[istackIndex].effectType = getattr(self,+ 'effectType' +str(istackIndex))
+
+
+
 
 
 #------
@@ -219,6 +225,7 @@ class UIListData:
       setattr(bpy.types.Scene,'stackActive',bpy.props.BoolProperty(
 
                                                name= 'stackActive',
+                                               description= "this stack is used to handle the bake image",
                                                default= True,
                                                update= stackActiveUpdate
                                                )) 
@@ -228,10 +235,11 @@ class UIListData:
                                                name= 'stack_choose_index',
                                                default= -1,
                                                min= -1
-                                               
+
                                                ))
 
 
+      UVListLayer.regisiterItemAttrs()
 
       for i in range(listData.layerMaxNum):
         # this attr not show UI
@@ -269,23 +277,3 @@ class UIListData:
 
                                                ))
 
-
-
-
-   def unload(self):
-
-      listData : UIListData = bpy.types.Scene.uilistData
-     
-      for i in range(listData.layerMaxNum):
-          
-          delattr(bpy.types.Scene,'active_' + str(i))
-
-          delattr(bpy.types.Scene,'layerName_' + str(i))
-           
-          delattr(bpy.types.Scene,'coverObjName_' + str(i)) 
-
-          delattr(bpy.types.Scene,'blendMode_' + str(i))
-
-          delattr(bpy.types.Scene,'isUseAlphaTexture_' + str(i))
-
-          delattr(bpy.types.Scene,'bakeTemplateType_' + str(i))

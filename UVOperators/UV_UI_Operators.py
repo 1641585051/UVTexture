@@ -37,16 +37,40 @@ class UVTree_OT_recalculate_image_stack(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class UVTree_OT_effect_change_choose_index(bpy.types.Operator):
+     '''
+       ctrl + left mouse is next effect,
+       left mouse is before effect
+     '''
+
+     bl_idname: str = "object.effectchangechooseindex"
+     bl_label: str = "set choose index effect Ui element"
+
+     def check(self, context) -> bool:
+       return True
+
+     def invoke(self, context, event):
+
+       if event.ctrl and event.type == 'LEFTMOUSE' :
+            
+          bpy.context.scene.stack_choose_index += 1
+      
+       elif event.type == 'LEFTMOUSE':
+          
+          bpy.context.scene.stack_choose_index -= 1
+
+       return {"FINISHED"}
 
 
-class UVTree_OT_change_choose_index_by_Roller(bpy.types.Operator):
+
+class UVTree_OT_change_choose_index(bpy.types.Operator):
     '''ctrl + left mouse is next layer,
        left mouse is before layer
     '''
 
 
-    bl_idname: str = "object.changechooseindexbyroller"
-    bl_label: str = "set choose index Ui element by roller"
+    bl_idname: str = "object.changechooseindex"
+    bl_label: str = "set choose index Ui element"
     
     def check(self, context) -> bool:
        return True
@@ -85,6 +109,19 @@ class UITree_OT_eyetropper_CoverObjName(bpy.types.Operator):
 
         return {"FINISHED"}
 
+
+
+class UIImageStack_OT_createEffectItem(bpy.types.Operator):
+    bl_idname: str = "object.createeffectitem"
+    bl_label: str = "create layer"
+
+    
+
+    
+
+
+    ...
+
   
 
 
@@ -121,7 +158,7 @@ class UITree_OT_createItem(bpy.types.Operator):
         if gpuEnv.NVorAmd:
                     # init CUDA context struct
                 image_stack_Struct[scene.uv_texture_list_index] = gpu_photo_stack.gpuImageStack(
-                                                                                                        
+                                                                     stackIndex= scene.uv_texture_list_index,                                                            
                                                                      stackItemWidth = config.width,
                                                                      stackItemheight= config.height,
                                                                      is64Bit= config.float32
