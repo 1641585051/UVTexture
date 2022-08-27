@@ -174,9 +174,9 @@ blur_id = str("BlurType_")
 
 
 blurTypes = [
-    (blur_id + str(BlurType.Null),str(BlurType.Null),str(BlurType.Null),'ALIGN_JUSTIFY',0),
-    (blur_id + str(BlurType.Gaussian),str(BlurType.Gaussian),str(BlurType.Gaussian),'ALIGN_JUSTIFY',0),
-    (blur_id + str(BlurType.Box),str(BlurType.Box),str(BlurType.Box),'ALIGN_JUSTIFY',1),
+    (blur_id + str(BlurType.Null),str(BlurType.Null),str(BlurType.Null),str('ALIGN_JUSTIFY')),
+    (blur_id + str(BlurType.Gaussian),str(BlurType.Gaussian),str(BlurType.Gaussian),str('ALIGN_JUSTIFY')),
+    (blur_id + str(BlurType.Box),str(BlurType.Box),str(BlurType.Box),str('ALIGN_JUSTIFY')),
     #(blur_id + str(BlurType.Kawase),str(BlurType.Kawase),2),
     #(blur_id + str(BlurType.Dual),str(BlurType.Dual),3),
     #(blur_id + str(BlurType.Bokeh),str(BlurType.Bokeh),4),
@@ -211,7 +211,7 @@ strock_id = str('Strock_')
 
 strocks = [
 
-    (strock_id + str(Stroke.Base),str(Stroke.Base),str(Stroke.Base),'META_PLANE',0),
+    (strock_id + str(Stroke.Base),str(Stroke.Base),str(Stroke.Base),str('META_PLANE')),
 
 
 
@@ -225,7 +225,7 @@ class BakeTemplate(enum.Enum):
       '''expend  this will have other template
      
       '''
-      Base = '0' # func : BakeNodeTreeTemplate.BakeNodeTreeTemplate0
+      One = 'one' # func : BakeNodeTreeTemplate.BakeNodeTreeTemplate0
    
 
 
@@ -235,7 +235,7 @@ template_id = str('template_')
 
 bakeTemplates = [
 
-   (template_id +str(BakeTemplate.Base),str(BakeTemplate.Base),str(BakeTemplate.Base),'MOD_CLOTH',0),
+   (template_id +str(BakeTemplate.One),str(BakeTemplate.One),str(BakeTemplate.One),'MOD_CLOTH',0),
 
 
 
@@ -253,6 +253,14 @@ class UVTextureLayer(bpy.types.PropertyGroup):
        maxlen=128
 
     ) 
+
+    bakeObjName = bpy.props.StringProperty(
+       name="bakeObjName",
+       description="BakeObjName",
+       default="Default",
+       maxlen=128
+
+    )
    
     
     blendMode = bpy.props.EnumProperty(
@@ -279,7 +287,7 @@ class UVTextureLayer(bpy.types.PropertyGroup):
       items= bakeTemplates,
       name= "bakeTemplate",
       description= 'bake image template make node tree func',
-      default= template_id + str(BakeTemplate.Base),
+      default= template_id + str(BakeTemplate.One),
      
 
 
@@ -290,7 +298,22 @@ class UVTextureLayer(bpy.types.PropertyGroup):
 
 
 #expend (all effect enum)
-alltypes : list = blurTypes + strocks    # + ......
+alltypes =  [
+
+    (blur_id + str(BlurType.Null),str(BlurType.Null),str(BlurType.Null),'ALIGN_JUSTIFY',0),
+    (blur_id + str(BlurType.Gaussian),str(BlurType.Gaussian),str(BlurType.Gaussian),'ALIGN_JUSTIFY',1),
+    (blur_id + str(BlurType.Box),str(BlurType.Box),str(BlurType.Box),'ALIGN_JUSTIFY',2),
+    (strock_id + str(Stroke.Base),str(Stroke.Base),str(Stroke.Base),'ALIGN_JUSTIFY',3),
+
+   
+
+
+
+
+
+
+
+ ] #blurTypes + strocks    # + ......
                    
 
 def rUpdate(self,context):
@@ -449,7 +472,8 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
 
       items= alltypes,
       name= 'effectType',
-      description= 'all effect enums'
+      description= 'all effect enums',
+      default= 'None'
 
     )
 

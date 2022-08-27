@@ -53,6 +53,8 @@ class UVTexture_UL_List_Image_stack(bpy.types.UIList):
       row2.prop(data= data,property= 'effectType' + str(index),text="",icon= 'FILE_IMAGE')
 
 
+
+
 class UVTexture_PT_stack_effect(bpy.types.Panel):
       
       bl_label: str = "effect panel"
@@ -142,8 +144,9 @@ class UVTexture_PT_layer_Image_stack(bpy.types.Panel):
   
       subrow3 = row3.column()
 
-      #subrow3.operator() 
-
+      subrow3.operator(operator= 'object.createeffectitem',text='',icon='ADD') 
+      
+      subrow3.operator(operator= 'object.deleteeffectitem',text= '',icon='REMOVE')
 
 
 
@@ -180,19 +183,19 @@ class UVTexture_UL_List_uv_tree(bpy.types.UIList):
          settingrow.prop(data= data,property= 'coverObjName_' + str(index),text="coverName")
          settingrow.operator(operator='object.eyetropper_coverobjname',text="",icon='EYEDROPPER')
       
+         settingrow.prop(data= data,property= 'bakeObjName_' + str(index),text="bakeName")
+         #settingrow.operator(operator='object.eyetropper_coverobjname',text="",icon='EYEDROPPER')
+      
+
          settingrow2 = othersettings.row()
          settingrow2.prop(data= data,property= 'bakeTemplateType_' + str(index))
          
-
-
 
       elif self.layout_type in {"GRID"}:
            pass
 
    
   
-
-
 
 class UVTexture_PT_Base(bpy.types.Panel):
    bl_idname: str = "UVTexture_PT_Base"

@@ -26,6 +26,7 @@ from .UI import UV_UI
 from .UVOperators import UV_operators,UV_UI_Operators
 from .UVMapping import UVMappingOperator
 from .dataDefine import DataProperty ,UVListLayer
+from .tools.GPUConditionMonitoring import base as gpuCondition
 
 
 #----------------
@@ -50,8 +51,14 @@ classes : dict[int,Any] = {
   15: UV_UI_Operators.UVTree_OT_recalculate_image_stack,
   16: UV_UI.UVTexture_PT_stack_effect,
   17: UV_UI_Operators.UVTree_OT_effect_change_choose_index,
+  18: UV_UI_Operators.UIImageStack_OT_createEffectItem,
+  19: UV_UI_Operators.UIImageStack_OT_deleteEffectItem,
+  20: gpuCondition.UVTexture_PT_GPUPanel,
+  21: gpuCondition.UVTexture_OT_OpenGPUConsumption,
+  #22: UV_operators.UVTexture_OT_UVLayerBakeUseTemplateOperator,
 
-  
+
+
 
   
 

@@ -86,6 +86,14 @@ def coverObjNameUpdate(self,context):
 
     update(self= self,func= func)
 
+def bakeObjNameUpdate(self,context):
+
+    def func(self,ind :int):
+        item = bpy.context.scene.uv_texture_settings[ind]
+        item.bakeObjName = getattr(self,'bakeObjName_' + str(ind))
+
+    update(self= self,func= func)
+
 def blendModeUpdate(self,context):
      
     def func(self,ind :int):
@@ -200,6 +208,14 @@ class UIListData:
                                                update= coverObjNameUpdate
                                                )) 
        
+         setattr(bpy.types.Scene,'bakeObjName_' + str(i),bpy.props.StringProperty(
+
+                                               name= 'bakeObjName_' + str(i),
+                                               default= "",
+                                               update= bakeObjNameUpdate
+
+                                               ))
+
          setattr(bpy.types.Scene,'blendMode_' + str(i),bpy.props.EnumProperty(
                                                items= UVListLayer.modes,
                                                name='blendMode_' + str(i),
@@ -214,9 +230,10 @@ class UIListData:
                                                )) 
 
          setattr(bpy.types.Scene,'bakeTemplateType_' + str(i),bpy.props.EnumProperty(
+                                               
                                                items= UVListLayer.bakeTemplates,
                                                name= 'bakeTemplateType_' + str(i),
-                                               default= UVListLayer.template_id + str(UVListLayer.BakeTemplate.Base),  
+                                               default= UVListLayer.template_id + str(UVListLayer.BakeTemplate.One),  
                                                update= bakeTemplateTypeUpdate
                                                )) 
 
@@ -272,8 +289,22 @@ class UIListData:
                                                
                                                items= UVListLayer.alltypes,
                                                name= 'effectType' + str(i),
-                                               default= UVListLayer.blur_id + str(UVListLayer.BlurType.Null),  
                                                update= effectTypeUpdate    
 
                                                ))
 
+    # gpu
+      setattr(bpy.types.Scene,'GPUUsage',bpy.props.StringProperty(
+                                                 
+                                                name= 'GPUUsage',
+                                                default= "0%",
+                                                
+                                                ))
+
+
+      setattr(bpy.types.Scene,'GPUVideoMemoryConsumption',bpy.props.StringProperty(
+                                                 
+                                                name= 'GPUVideoMemoryConsumption',
+                                                default= "-/-",
+                                                
+                                                ))                                          

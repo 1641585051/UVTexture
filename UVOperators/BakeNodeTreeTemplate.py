@@ -11,7 +11,7 @@ from ..dataDefine import UVListLayer
 def findTemplateFunc(bl_enum :str):
     '''bl_num is BakeTemplate enumProperty'''
     for key in funcs.keys():
-        if operator.contains(bl_enum,str(key)):
+        if operator.contains(str(key),bl_enum):
             return funcs[key]
 
     
@@ -189,7 +189,7 @@ def BakeNodeTreeTemplate0(object : bpy.types.Object,image : bpy.types.Image,prop
 #-------------------------------------------------------------    
 
 funcs = {
-    UVListLayer.BakeTemplate.Base : BakeNodeTreeTemplate0,
+    UVListLayer.BakeTemplate.One : BakeNodeTreeTemplate0,
     
 
 

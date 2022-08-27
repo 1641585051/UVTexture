@@ -113,16 +113,59 @@ class UITree_OT_eyetropper_CoverObjName(bpy.types.Operator):
 
 class UIImageStack_OT_createEffectItem(bpy.types.Operator):
     bl_idname: str = "object.createeffectitem"
-    bl_label: str = "create layer"
+    bl_label: str = "create stack item"
+
+    def check(self, context) -> bool:
+        scene = bpy.context.scene
+        
+        return len(getattr(scene,'Image_stack_list' + str(scene.layer_choose_index))) < 99
+
+
+    def execute(self, context):
+
+        scene = bpy.context.scene   
+        
+        stack = getattr(scene,'Image_stack_list' + str(scene.layer_choose_index))
+        
+        item = stack.add()
+        index = getattr(scene,'Image_stack_index' + str(scene.layer_choose_index))
+        setattr(scene,'Image_stack_index' + str(scene.layer_choose_index),index + 1)
+
+        item.stackActive = True
+        item.effectType = 'None'
+
+        
+
+
 
     
+class UIImageStack_OT_deleteEffectItem(bpy.types.Operator):
+    bl_idname: str = "object.deleteeffectitem"
+    bl_label: str = "delete stack item"
 
+    @classmethod
+    def poll(cls,context):
+        scene = bpy.context.scene
+        if scene.layer_choose_index != -1:
+            if len(getattr(scene,'Image_stack_list' + str(scene.layer_choose_index))) != 0:
+                return True
+            else:
+                return False  
+        else:
+            return False
+            
     
+    def execute(self, context):
 
+        scene = bpy.context.scene
+        index = getattr(scene,'Image_stack_index' + str(scene.layer_choose_index))
+        stack = getattr(scene,'Image_stack_list' + str(scene.layer_choose_index))
 
-    ...
-
-  
+        stack.remove(index) 
+        
+        setattr(scene,'Image_stack_index' + str(scene.layer_choose_index),min(max(0,index - 1),len(stack) - 1))  
+       
+        return {"FINISHED"}
 
 
 
@@ -176,9 +219,10 @@ class UITree_OT_createItem(bpy.types.Operator):
         setting = scene.uv_texture_settings.add()
 
         setting.coverObjName = ""
+        setting.bakeObjName = ""
         setting.blendMode = UVListLayer.blend_id + str(UVListLayer.BlendMode.Normal)
         setting.isUseAlphaTexture = True
-        setting.bakeTemplateType = UVListLayer.template_id + str(UVListLayer.BakeTemplate.Base)
+        setting.bakeTemplateType = UVListLayer.template_id + str(UVListLayer.BakeTemplate.One)
         
         
         return {"FINISHED"}

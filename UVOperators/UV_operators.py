@@ -1,5 +1,6 @@
 from distutils import core
 import os
+from unicodedata import name
 import bpy
 import bmesh
 import sys
@@ -27,20 +28,17 @@ class UVTexture_OT_Image_Stack_Compute(bpy.types.Operator):
     bl_idname :str = "object.stackcompute"
     bl_label: str = "Performs processing operations on the image"
 
+    
     def check(self,context) -> bool:
       ...
 
    
     def execute(self, context):
 
-       
+      #self.report({'INFO'}) 
+      
 
-
-
-
-
-
-      ...
+      return {'FINISHED'}
 
 
 class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
@@ -58,10 +56,6 @@ class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
    def execute(self, context):
       
       resultDatas = UVMappingOperator.getResult()
-
-      from ..lookMouse import lookMouse
-
-      lookMouse.lookMouse()
       
       backgroundObj = context.scene.objects[context.scene.objects.find(self.backGroundObjName)]  
 
@@ -141,10 +135,10 @@ class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
 
             obj_layer[meshMap[meshIndex]].uv.x = puv.x
             obj_layer[meshMap[meshIndex]].uv.y = puv.y
-          else:
-            raise RuntimeWarning("don't find this point in" + obj.name + "position :  " + str(meshPoint) + "\n" + "and don't find mapping points")
 
-      lookMouse.unlookMouse()
+          else:
+            self.report({'WARRING'},"don't find this point in" + obj.name + "position :  " + str(meshPoint) + "\n" + "and don't find mapping points")
+            raise RuntimeWarning("don't find this point in" + obj.name + "position :  " + str(meshPoint) + "\n" + "and don't find mapping points")
 
       backMesh.free()
       mesh.free()
@@ -154,20 +148,16 @@ class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
 
 
 
-class UVTexture_OT_UVLayerBakeUseTemplate0Operator(bpy.types.Operator):
+class UVTexture_OT_UVLayerBakeUseTemplateOperator(bpy.types.Operator):
    '''bake uv layer in Uv layer tree
       this Operator use Bake Template0 (BakeNodeTreeTemplate.BakeNodeTreeTemplate0 func)
       and only use GPU
    '''
    bl_options = 'BLOCKING'
 
-   bl_idname :str = "object.UVLayerBake"
+   bl_idname :str = "object.uvlayerbake"
    bl_label: str = "bake uv layer"
 
-   bakeImageName = bpy.props.StringProperty(name='bakeImageName',default='Render Result')
-   '''bakeImageName is LayerName '''
-   bakeObjectName = bpy.props.StringProperty(name='bakeObjectName',default='none')
-   
 
    def check(self,context) -> bool:
 
@@ -181,15 +171,15 @@ class UVTexture_OT_UVLayerBakeUseTemplate0Operator(bpy.types.Operator):
 
    def execute(self, context):
 
-      scene = bpy.context.scene
+      
+         scene = bpy.context.scene
+         index = scene.layer_choose_index
+         bakeImageName = scene.uv_texture_list[index].layerName
 
-      #get datas
-      index = 0
-      imageConfig : DataProperty.UVBakeImageConfigData = None
-      values = bpy.types.Scene.uv_texture_list.values()
-      layerNames = list((value.layerName for value in values))
-      if self.bakeImageName in layerNames :
-         index = layerNames.index(self.bakeImageName)
+         #get datas
+         imageConfig : DataProperty.UVBakeImageConfigData = None
+
+         bakeObjectName = scene.uv_texture_settings[index].bakeObjName
       
          config = bpy.types.Scene.uv_bake_image_config[index]
       
@@ -201,15 +191,15 @@ class UVTexture_OT_UVLayerBakeUseTemplate0Operator(bpy.types.Operator):
                     )
 
       
-         bpy.context.active_object = context.scene.objects[context.scene.objects.find(self.bakeObjectName)]
+         bpy.context.active_object = context.scene.objects[context.scene.objects.find(bakeObjectName)]
 
          obj = bpy.context.active_object
 
          image : bpy.types.Image = None  
 
-         if self.bakeImageName not in (ima.name for ima in bpy.data.images.values()):
+         if bakeImageName not in (ima.name for ima in bpy.data.images.values()):
                image = bpy.data.images.new(
-                       name= self.bakeImageName,
+                       name= bakeImageName,
                        width= imageConfig.widthData,
                        height= imageConfig.heightData,
                        alpha= False,
@@ -219,9 +209,9 @@ class UVTexture_OT_UVLayerBakeUseTemplate0Operator(bpy.types.Operator):
                image.generated_color = list(imageConfig.colorData)
 
          else:
-               image = bpy.data.images[self.bakeImageName]
+               image = bpy.data.images[bakeImageName]
 
-         templateType :str = values[index].bakeTemplateType
+         templateType :str = scene.uv_texture_settings[index].bakeTemplateType
 
          func = BakeNodeTreeTemplate.findTemplateFunc(bl_enum= templateType) 
          func(object= obj,image= image,propertyData= bpy.types.Scene.bake_extend_template_data,
@@ -260,17 +250,7 @@ class UVTexture_OT_UVLayerBakeUseTemplate0Operator(bpy.types.Operator):
             pass
 
       
-      else:
-         raise RuntimeWarning("bakeImageName is not LayerName")
-         
-
-   
-      
-   
-
-
-         
-      return {'FINISHED'}
+         return {'FINISHED'}
 
 
 class UVTexture_OT_InitOperator(bpy.types.Operator):

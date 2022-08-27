@@ -10,7 +10,8 @@ AMD : str = 'AMD'
 NVorAmd : bool = None
 
 def makeSureGPUEnv():
-
+  
+  global NVorAmd
   gpu_platform = gpu.platform.vendor_get()
   if operator.contains(gpu_platform,NV):
      NVorAmd = True
