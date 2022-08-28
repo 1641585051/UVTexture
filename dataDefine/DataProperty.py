@@ -298,6 +298,12 @@ def UVTextureProperties():
 
     '''this datq need bind UI :  '''
 
- 
+    bpy.types.Scene.finished_mapping = bpy.props.BoolProperty(
+
+        name= 'finished_mapping',
+        description= 'make sure UVMapping Operator is finished ,and success',
+        default= False
+         
+        )
     
 

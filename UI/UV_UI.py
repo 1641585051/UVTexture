@@ -148,6 +148,11 @@ class UVTexture_PT_layer_Image_stack(bpy.types.Panel):
       
       subrow3.operator(operator= 'object.deleteeffectitem',text= '',icon='REMOVE')
 
+      row4 = layout.row()
+
+      row4.operator()
+
+
 
 
 class UVTexture_UL_List_uv_tree(bpy.types.UIList):
@@ -181,12 +186,9 @@ class UVTexture_UL_List_uv_tree(bpy.types.UIList):
          settingrow.separator()
          settingrow.prop(data= data,property= 'isUseAlphaTexture_' + str(index),text="alpha")
          settingrow.prop(data= data,property= 'coverObjName_' + str(index),text="coverName")
-         settingrow.operator(operator='object.eyetropper_coverobjname',text="",icon='EYEDROPPER')
-      
+        
          settingrow.prop(data= data,property= 'bakeObjName_' + str(index),text="bakeName")
-         #settingrow.operator(operator='object.eyetropper_coverobjname',text="",icon='EYEDROPPER')
-      
-
+        
          settingrow2 = othersettings.row()
          settingrow2.prop(data= data,property= 'bakeTemplateType_' + str(index))
          
@@ -241,7 +243,17 @@ class UVTexture_PT_Base(bpy.types.Panel):
       
       subrow.operator(operator= 'object.deletelayer',text="",icon="REMOVE")
       
+      subrow.operator(operator='object.eyetropper_coverobjname',text="",icon='EYEDROPPER')
+      
+      subrow.operator(operator='object.eyetropper_bakeobjname',text="",icon='FILE_IMAGE')
+      
+      computerow = box.row()
+      
+      computerow.operator(operator= 'object.mappingalllayers',text='mappingAllLayers') 
 
+      computerow.operator(operator= 'object.bakealllayers',text='bakeAllData')   
+ 
+      
 
 
 

@@ -51,7 +51,7 @@ class UVTexture_OT_OpenGPUConsumption(bpy.types.Operator):
        
         self.getGPUMessage()
 
-        bpy.ops.object.stackcompute('INVOKE_DEFAULT')
+        #bpy.ops.object.stackcompute('INVOKE_DEFAULT')
       
         return {"FINISHED"}
 

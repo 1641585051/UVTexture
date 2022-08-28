@@ -1,9 +1,7 @@
 import sys
-import importlib
 from typing import Any
 
 import bpy
-
 
 
 bl_info = {
@@ -55,14 +53,15 @@ classes : dict[int,Any] = {
   19: UV_UI_Operators.UIImageStack_OT_deleteEffectItem,
   20: gpuCondition.UVTexture_PT_GPUPanel,
   21: gpuCondition.UVTexture_OT_OpenGPUConsumption,
-  #22: UV_operators.UVTexture_OT_UVLayerBakeUseTemplateOperator,
+  22: UV_operators.UVTexture_OT_UVLayerBakeUseTemplateOperator,
+  23: UV_UI_Operators.UITree_OT_eyetropper_BakeObjName,
+  24: UV_operators.UVTexture_OT_ReBakeAllLayers,
+  15: UV_operators.UVTexture_OT_MappingAllLayers,
 
 
 
 
-  
 
- 
 ## expend
 
 

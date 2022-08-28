@@ -88,6 +88,24 @@ class UVTree_OT_change_choose_index(bpy.types.Operator):
        return {"FINISHED"}
     
 
+class UITree_OT_eyetropper_BakeObjName(bpy.types.Operator):
+ 
+    bl_idname: str = "object.eyetropper_bakeobjname"
+    bl_label: str = "eyetropper BakeObjName form 3D view by active Object"
+    
+    def check(self, context) -> bool:
+        scene = bpy.context.scene
+        
+        return scene.layer_choose_index != -1
+
+    def execute(self, context):
+
+        scene = bpy.context.scene
+        activeObj = bpy.context.active_object
+        setattr(scene,'bakeObjName_' + str(scene.layer_choose_index),activeObj.name)
+
+        return {"FINISHED"}
+
 
 
 class UITree_OT_eyetropper_CoverObjName(bpy.types.Operator):
@@ -119,7 +137,7 @@ class UIImageStack_OT_createEffectItem(bpy.types.Operator):
         scene = bpy.context.scene
         
         return len(getattr(scene,'Image_stack_list' + str(scene.layer_choose_index))) < 99
-
+                
 
     def execute(self, context):
 
@@ -195,7 +213,7 @@ class UITree_OT_createItem(bpy.types.Operator):
         config = scene.uv_bake_image_config.add()
         config.width = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config)) - 1].textureSideLength
         config.height = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config)) - 1].textureSideLength
-        config.color = (0.0,0.0,0.0)
+        config.color = (255.0 * 0.645,255.0 * 0.645,255.0 * 0.645)
         config.float32 = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config.keys())) - 1].float32 
 
         if gpuEnv.NVorAmd:

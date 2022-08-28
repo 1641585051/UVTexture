@@ -1,6 +1,6 @@
-from distutils import core
+
 import os
-from unicodedata import name
+
 import bpy
 import bmesh
 import sys
@@ -16,6 +16,12 @@ from ..UVMapping import base,UVMappingOperator
 
 from ..tools import gpuEnv
 from ..dataDefine.gpuDataDifine import gpu_photo_stack
+
+
+
+
+
+
 
 
 class UVTexture_OT_Image_Stack_Compute(bpy.types.Operator):
@@ -35,10 +41,54 @@ class UVTexture_OT_Image_Stack_Compute(bpy.types.Operator):
    
     def execute(self, context):
 
-      #self.report({'INFO'}) 
+      
       
 
       return {'FINISHED'}
+
+class UVTexture_OT_MappingAllLayers(bpy.types.Operator):
+   '''mapping all layers'''
+   bl_idname :str = "object.mappingalllayers"
+   bl_label: str = "mapping all layers"
+
+   bl_option = {'BLOCKING'}
+
+   def check(self, context) -> bool:
+      
+      scene = bpy.context.scene
+      
+      return scene.finished_mapping == False
+  
+
+   def execute(self, context):
+
+      scene = bpy.context.scene
+      scene.layer_choose_index = 0
+
+      mappingsuccess = True
+
+      for ind in range(scene.uv_texture_list_index):
+
+         # list 0 is base obj position,should set base obj in zero element,and don't set coverObjName  
+         if ind != 0:
+
+            scene.layer_choose_index = ind
+            
+            try:
+               
+                  bpy.ops.object.calculateprojectionvalue('INVOKE_DEFAULT')
+
+                  bpy.ops.object.uvmapping('INVOKE_DEFAULT')
+
+            except RuntimeError as err:
+                  mappingsuccess = False
+                  self.report({'ERROR'},'failed mapping: --- {0}'.format(str(err)))
+                  print('failed mapping: ---',err)
+
+      scene.finished_mapping = mappingsuccess
+
+      return {'FINISHED'}
+   
 
 
 class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
@@ -48,9 +98,6 @@ class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
    
    bl_idname :str = "object.uvmapping"
    bl_label: str = "mapping uv on target object"
-
-   def check(self,context) -> bool:
-      ...
 
    
    def execute(self, context):
@@ -129,7 +176,7 @@ class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
               puv = base.TrigonoMetricParameterEquations(point0= rootuv,point1= point1uv, point2= point2uv,u= uv[0],v= uv[1]) 
           else:
              find = (rootIndex != sys.maxsize,point1Index != sys.maxsize,point2Index != sys.maxsize)
-             raise RuntimeWarning("root:" + str(find[0]) + "\n" + "point1:" + str(find[1]) + "\n" + "point2:" + str(find[2])) 
+             raise RuntimeError("root:" + str(find[0]) + "\n" + "point1:" + str(find[1]) + "\n" + "point2:" + str(find[2])) 
 
           if meshIndex != sys.maxsize and puv.xyz != mathutils.Vector().xyz:
 
@@ -138,13 +185,59 @@ class UVTexture_OT_ObjectUVMapping(bpy.types.Operator):
 
           else:
             self.report({'WARRING'},"don't find this point in" + obj.name + "position :  " + str(meshPoint) + "\n" + "and don't find mapping points")
-            raise RuntimeWarning("don't find this point in" + obj.name + "position :  " + str(meshPoint) + "\n" + "and don't find mapping points")
+            raise RuntimeError("don't find this point in" + obj.name + "position :  " + str(meshPoint) + "\n" + "and don't find mapping points")
 
       backMesh.free()
       mesh.free()
       
+      return {'FINISHED'}
 
-   
+
+
+class UVTexture_OT_ReBakeAllLayers(bpy.types.Operator):
+      '''bake all layers, and put bake image in image stack'''
+
+      bl_idname :str = "object.bakealllayers"
+      bl_label: str = "bake all layers"
+
+      bl_options = {'BLOCKING'}
+
+      def check(self, context) -> bool:
+         
+         scene = bpy.context.scene
+         
+         return scene.finished_mapping 
+
+      def execute(self, context):
+
+         try:
+
+            if scene.uv_texture_list_index != -1:
+
+               # in blender bake only support cycles engine
+               bpy.context.scene.render.engine = 'CYCLES'
+               # open GPU compute
+               bpy.context.scene.cycles.device = 'GPU'
+
+               scene = bpy.context.scene
+               scene.layer_choose_index = 0
+
+               for ind in range(scene.uv_texture_list_index): 
+
+                  scene.layer_choose_index = ind
+
+                  bpy.ops.object.uvlayerbake('INVOKE_DEFAULT')
+
+
+         except Exception as e:
+              print('exception > {0}'.format(str(e)))
+
+         else:
+
+           scene.finished_mapping = False
+
+
+         return {'FINISHED'}
 
 
 
@@ -153,11 +246,11 @@ class UVTexture_OT_UVLayerBakeUseTemplateOperator(bpy.types.Operator):
       this Operator use Bake Template0 (BakeNodeTreeTemplate.BakeNodeTreeTemplate0 func)
       and only use GPU
    '''
-   bl_options = 'BLOCKING'
-
+   
    bl_idname :str = "object.uvlayerbake"
    bl_label: str = "bake uv layer"
 
+   #bl_options = {'BLOCKING'}
 
    def check(self,context) -> bool:
 
@@ -166,12 +259,10 @@ class UVTexture_OT_UVLayerBakeUseTemplateOperator(bpy.types.Operator):
               
               )
 
-   def invoke(self, context, event):
-      return super().invoke(context, event)
+   
 
    def execute(self, context):
 
-      
          scene = bpy.context.scene
          index = scene.layer_choose_index
          bakeImageName = scene.uv_texture_list[index].layerName
@@ -220,34 +311,36 @@ class UVTexture_OT_UVLayerBakeUseTemplateOperator(bpy.types.Operator):
 
          bpy.context.view_layer.objects.active = obj
          
-         bpy.ops.object.bake(type='EMIT',target='IMAGE_TEXTURES', save_mode='INTERNAL')
+         bpy.ops.object.bake(type='EMIT',target='IMAGE_TEXTURES', save_mode='EXTERNAL')
          # bake may be use thread ,if not The following code will work
          
          # Save the photo to the gpu_image_stack
          stackDict =  UV_UI_Operators.getImageStackDict()
 
+         path = os.path.dirname(__file__) + os.sep + 'temp_' + image.name + '.jpg'
+
+         image.save_render(filepath= path ,scene= scene)
+         
+         saveImage = cv2.imread(filename= path)
+
+         saveImage : np.ndarray = np.asarray(object= saveImage[:,:,:],dtype= np.float32)
+
          if gpuEnv.NVorAmd:
+
             stack : gpu_photo_stack.gpuImageStack = stackDict[scene.layer_choose_index]
             
-            path = os.path.dirname(__file__) + os.sep + 'temp_' + image.name + '.jpg'
-
-            image.save_render(filepath= path ,scene= scene)
-
-            saveImage = cv2.imread(filename= path)
-
-            saveImage : np.ndarray = np.asarray(object= saveImage[:,:,:],dtype= np.float32)
-
             if saveImage.shape[2] == 3:
                 alpha = np.full(shape= (saveImage.shape[0],saveImage.shape[1]),fill_value= 255.0,dtype= np.float32)
                 saveImage = np.hstack((saveImage,alpha))
 
             stack.SetBakeImage(image= saveImage,index= index,backgroundColor= imageConfig.colorData)
 
-            os.remove(path= path)
-
          else:
 
             pass
+         
+         os.remove(path= path)
+
 
       
          return {'FINISHED'}
