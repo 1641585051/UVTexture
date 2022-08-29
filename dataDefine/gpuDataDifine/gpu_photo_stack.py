@@ -328,6 +328,8 @@ class gpuImageStack:
       '''
       RecalculateAllData at this image stack 
       update all layer by new bake image   
+
+      index : layer_choose_index
       
       '''
       tem = ten.tensor(data= image.to_numpy(),dtype= np.float32,gpu= True)
@@ -397,8 +399,26 @@ class gpuImageStack:
 
       self.__stackgpudata = ten.tensor(data= tem.to_numpy(),dtype= self.__type,gpu= True) 
       self.__stackgpudata.execute()
+
+      self.__stacks[0].gpuImage = gpuImageDef(image_width =self.__width,image_height= self.__height,is64Bit= (self.__type == np.float64))
       
+      self.__stacks[0].gpuImage.gpuImage = image
+
       self.RecalculateAllData(image,index)
+
+    def GetBakeImage(self):
+
+       return self.__stacks[0].gpuImage
+
+
+
+      
+
+
+
+
+
+
 
 ##  CUDA  ##
        

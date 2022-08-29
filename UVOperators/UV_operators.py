@@ -1,15 +1,19 @@
 
+import inspect
 import os
+from typing import Any
 
 import bpy
 import bmesh
 import sys
 import mathutils
+import operator
+
 
 import numpy as np
 import cv2
 
-from ..dataDefine import DataProperty
+from ..dataDefine import DataProperty,ControlAlgorithms
 from . import BakeNodeTreeTemplate,UV_UI_Operators
 
 from ..UVMapping import base,UVMappingOperator
@@ -18,9 +22,22 @@ from ..tools import gpuEnv
 from ..dataDefine.gpuDataDifine import gpu_photo_stack
 
 
+class UVTexture_OT_Compute_All_Image_effect(bpy.types.Operator):
+
+     bl_idname :str = "object.computeallimageeffect"
+     bl_label: str = "compute all image effect"
+
+     bl_options = {'BLOCKING'}
 
 
 
+
+
+
+
+
+
+     pass
 
 
 
@@ -34,15 +51,73 @@ class UVTexture_OT_Image_Stack_Compute(bpy.types.Operator):
     bl_idname :str = "object.stackcompute"
     bl_label: str = "Performs processing operations on the image"
 
-    
-    def check(self,context) -> bool:
-      ...
 
-   
     def execute(self, context):
 
+      funcs = ControlAlgorithms.all_effect_funcs
       
+      scene = bpy.context.scene
+
+      ind = scene.layer_choose_index
+
+      imageStack = getattr(scene,'Image_stack_list' + str(ind))
+
+      item = imageStack[scene.stack_choose_index]
+
+      effectType = item.effectType     
+      prameters : dict[str,Any] = {}
       
+      for key in funcs:
+
+         if operator.contains(effectType,key):
+             
+             imagestackStruct = None
+
+             if gpuEnv.NVorAmd:
+                 
+                  imagestackStruct : gpu_photo_stack.gpuImageStack = UV_UI_Operators.getImageStackDict()[scene.layer_choose_index]
+                
+                  func = funcs[key]
+                  spec = inspect.getfullargspec(func= func)
+                  
+                  for permeter in spec.args:
+
+                     if permeter == 'a':
+
+                        prameters['a'] = imagestackStruct.GetBakeImage()
+
+                     prameters[permeter] = getattr(item,permeter)
+
+                  re = func(*(list(prameters.values()))) 
+
+                  keys = list(imagestackStruct.__stacks.keys())
+
+                  if effectType not in keys:
+                     
+                     imagedef = gpu_photo_stack.gpuImageDef(image_width= imagestackStruct.__width,image_height= imagestackStruct.__height,is64Bit= (imagestackStruct.__type == np.float64))
+                     imagedef.gpuImage = re
+                     imagestackStruct.add(effectType,imagedef)
+                   
+                  elif keys.index(effectType) == len(keys) - 1:
+
+                     last = imagestackStruct.getlastData()
+                     last.gpuImage = re
+           
+                  elif keys.index(effectType) != len(keys) - 1:
+
+                     imagestackStruct.removeAssociateData(effectType) 
+                     imagedef = gpu_photo_stack.gpuImageDef(image_width= imagestackStruct.__width,image_height= imagestackStruct.__height,is64Bit= (imagestackStruct.__type == np.float64))
+                     imagedef.gpuImage = re
+                     imagestackStruct.add(effectType,imagedef)
+                      
+                     imagestackStruct.RecalculateAllData(imagestackStruct.GetBakeImage(),ind) 
+
+                    
+
+             else:
+                pass 
+
+
 
       return {'FINISHED'}
 

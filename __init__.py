@@ -56,8 +56,8 @@ classes : dict[int,Any] = {
   22: UV_operators.UVTexture_OT_UVLayerBakeUseTemplateOperator,
   23: UV_UI_Operators.UITree_OT_eyetropper_BakeObjName,
   24: UV_operators.UVTexture_OT_ReBakeAllLayers,
-  15: UV_operators.UVTexture_OT_MappingAllLayers,
-
+  25: UV_operators.UVTexture_OT_MappingAllLayers,
+  
 
 
 

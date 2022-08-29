@@ -17,7 +17,6 @@ def getImageStackDict():
     return image_stack_Struct
 
 
-
 class UVTree_OT_recalculate_image_stack(bpy.types.Operator):
     ''' recalculate all image stack effect '''
 

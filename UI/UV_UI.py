@@ -150,8 +150,7 @@ class UVTexture_PT_layer_Image_stack(bpy.types.Panel):
 
       row4 = layout.row()
 
-      row4.operator()
-
+      #row4.operator()
 
 
 

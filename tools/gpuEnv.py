@@ -8,6 +8,7 @@ NV : str = 'NVIDIA'
 AMD : str = 'AMD'
 
 NVorAmd : bool = None
+''' true is NVIDIA ,false is AMD'''
 
 def makeSureGPUEnv():
   
