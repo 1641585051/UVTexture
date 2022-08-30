@@ -191,7 +191,9 @@ class SystemData(bpy.types.PropertyGroup):
 
 
 def InitOutPutConfig():
-    item = bpy.context.scene.uv_texture_output_config.add() 
+
+    scene = bpy.context.scene
+    item = scene.uv_texture_output_config.add()
     item.textureSideLength = 1024
     item.float32 = False
     item.mappingSampleNums = 512
@@ -306,4 +308,11 @@ def UVTextureProperties():
          
         )
     
+    bpy.types.Scene.finished_baking = bpy.props.BoolProperty(
+
+        name= 'finished_baking',
+        description= 'make sure Baking Operatot is finished',
+        default= False 
+
+        )
 

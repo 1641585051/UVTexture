@@ -410,8 +410,28 @@ class gpuImageStack:
 
        return self.__stacks[0].gpuImage
 
+   
+    def outputImageData(self):
+       
+       zeroTen = ten.full(shape= self.__stackgpudata.shape,fill_value= 0.0,dtype= self.__type,gpu= True)
 
+       maskTen = ten.full(shape= self.__stackgpudata.shape,fill_value= False,gpu= True) 
+       maskTen.execute()
+      
+       ten.equal(x1=self.__stackgpudata,x2= -1,out= maskTen).execute() 
+       
+       ten.take(a= zeroTen,indices= maskTen,out= self.__stackgpudata).execute()
 
+       images = ten.hsplit(a= self.__stackgpudata,indices_or_sections= 4)
+       images.execute()
+
+       re = ten.full(shape= self.__stackgpudata.shape,fill_value= 0.0,dtype= self.__type,gpu= True) 
+
+       for i in range(len(list(images))):
+
+         ten.add(x1= re,x2= images[i],out= re).execute()
+
+       return re
       
 
 

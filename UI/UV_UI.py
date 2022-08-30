@@ -30,6 +30,9 @@ class UVTexture_PT_output_config(bpy.types.Panel):
 
       two.prop(scene,'mappingSampleNums',text= 'SampleNums',icon= 'OUTLINER_DATA_LIGHTPROBE') 
 
+      
+
+
 
 class UVTexture_UL_List_Image_stack(bpy.types.UIList):
 
@@ -37,6 +40,7 @@ class UVTexture_UL_List_Image_stack(bpy.types.UIList):
    
    use_filter_show: bool = True
    use_filter_sort_alpha: bool = True
+
    list_id: str = 'UV_Texture_image_stack_part'
 
    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index, flt_flag):
@@ -80,6 +84,7 @@ class UVTexture_PT_stack_effect(bpy.types.Panel):
          row2.operator(operator= 'object.effectchangechooseindex',text="",icon= 'MOUSE_LMB')
  
          row4 = layout.row()
+         
          if getattr(scene,'stack_choose_index') >= 0:
             
             layerIndex = scene.layer_choose_index
@@ -150,7 +155,7 @@ class UVTexture_PT_layer_Image_stack(bpy.types.Panel):
 
       row4 = layout.row()
 
-      #row4.operator()
+      row4.operator(operator= 'object.computeallimageeffect',text='')
 
 
 

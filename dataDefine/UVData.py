@@ -11,13 +11,17 @@ from ..tools import gpuEnv
 
 def textureSideLengthUpdate(self,context):
     
-    index = getattr(self,'layer_choose_index')
+    scene = bpy.context.scene
+
+    config = scene.uv_texture_output_config[0]
+
+    layer_index = scene.layer_choose_index
     size = getattr(self,'textureSideLength')
     
-    data = bpy.context.scene.uv_texture_output_config[index]
-    data.textureSideLength = size
+   
+    config.textureSideLength = size
 
-    item = bpy.context.scene.uv_bake_image_config[index]
+    item = scene.uv_bake_image_config[layer_index]
     item.width = size
     item.height = size  
 
@@ -34,23 +38,29 @@ def textureSideLengthUpdate(self,context):
 
 def float32Update(self,context):
 
-    index = getattr(self,'layer_choose_index')
+    scene = bpy.context.scene
+
+    config = scene.uv_texture_output_config[0]
+
+    
+    layer_index = scene.layer_choose_index
     float32 = getattr(self,'float32')
     
-    data = bpy.context.scene.uv_texture_output_config[index]
-    data.float32 = float32  
+    config.float32 = float32  
 
-    item = bpy.context.scene.uv_bake_image_config[index]
+    item = scene.uv_bake_image_config[layer_index]
     item.float32 = float32
  
 
 def mappingSampleNumsUpdate(self,context):
 
-    index = getattr(self,'layer_choose_index')
+    scene = bpy.context.scene
+
+    config = scene.uv_texture_output_config[0]
+
     mappingSampleNums = getattr(self,'mappingSampleNums')
     
-    data = bpy.context.scene.uv_texture_output_config[index]
-    data.mappingSampleNums = mappingSampleNums
+    config.mappingSampleNums = mappingSampleNums
 
 
 

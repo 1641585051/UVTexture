@@ -206,14 +206,13 @@ class UITree_OT_createItem(bpy.types.Operator):
         scene.uv_texture_list_index +=1
 
         if len(scene.uv_texture_output_config) == 0:
-               DataProperty.InitOutPutConfig()
-
+            DataProperty.InitOutPutConfig() 
 
         config = scene.uv_bake_image_config.add()
-        config.width = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config)) - 1].textureSideLength
-        config.height = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config)) - 1].textureSideLength
+        config.width = scene.uv_texture_output_config[0].textureSideLength
+        config.height = scene.uv_texture_output_config[0].textureSideLength
         config.color = (255.0 * 0.645,255.0 * 0.645,255.0 * 0.645)
-        config.float32 = scene.uv_texture_output_config[len(list(scene.uv_texture_output_config.keys())) - 1].float32 
+        config.float32 = scene.uv_texture_output_config[0].float32 
 
         if gpuEnv.NVorAmd:
                     # init CUDA context struct

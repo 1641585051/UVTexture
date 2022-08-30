@@ -57,7 +57,7 @@ classes : dict[int,Any] = {
   23: UV_UI_Operators.UITree_OT_eyetropper_BakeObjName,
   24: UV_operators.UVTexture_OT_ReBakeAllLayers,
   25: UV_operators.UVTexture_OT_MappingAllLayers,
-  
+  26: UV_operators.UVTexture_OT_Compute_All_Image_effect,
 
 
 
@@ -113,6 +113,9 @@ def register():
     registerFunc(classes,False)
 
     bpy.types.Scene.uilistData.init()
+
+
+
 
  
 def unregister():

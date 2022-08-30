@@ -12,6 +12,8 @@ import operator
 
 import numpy as np
 import cv2
+import mars.tensor as ten
+
 
 from ..dataDefine import DataProperty,ControlAlgorithms
 from . import BakeNodeTreeTemplate,UV_UI_Operators
@@ -23,21 +25,44 @@ from ..dataDefine.gpuDataDifine import gpu_photo_stack
 
 
 class UVTexture_OT_Compute_All_Image_effect(bpy.types.Operator):
+     '''compute all effects in all layer'''
 
      bl_idname :str = "object.computeallimageeffect"
      bl_label: str = "compute all image effect"
 
      bl_options = {'BLOCKING'}
 
+     def check(self, context) -> bool:
+        
+        scene = bpy.context.scene
+
+        return scene.finished_baking
 
 
+     def execute(self, context):
+        
+        scene = bpy.context.scene
+        scene.layer_choose_index = 0
+
+        for lind in range(scene.uv_texture_list_index):
+        
+            scene.layer_choose_index = lind
+
+            scene.stack_choose_index = 0
+            
+            stack_index = getattr(scene,'Image_stack_index'+ str(scene.layer_choose_index))
+
+            for ind in range(stack_index):
+
+               scene.stack_choose_index = ind
+
+               bpy.ops.object.stackcompute('INVOKE_DEFAULT')
+         
+           
+        return {'FINISHED'}
 
 
-
-
-
-
-     pass
+     
 
 
 
@@ -82,7 +107,7 @@ class UVTexture_OT_Image_Stack_Compute(bpy.types.Operator):
                   
                   for permeter in spec.args:
 
-                     if permeter == 'a':
+                     if permeter == 'a': # a is func peremeter 
 
                         prameters['a'] = imagestackStruct.GetBakeImage()
 
@@ -111,15 +136,16 @@ class UVTexture_OT_Image_Stack_Compute(bpy.types.Operator):
                      imagestackStruct.add(effectType,imagedef)
                       
                      imagestackStruct.RecalculateAllData(imagestackStruct.GetBakeImage(),ind) 
-
-                    
-
+    
              else:
                 pass 
 
 
 
       return {'FINISHED'}
+
+
+
 
 class UVTexture_OT_MappingAllLayers(bpy.types.Operator):
    '''mapping all layers'''
@@ -310,7 +336,7 @@ class UVTexture_OT_ReBakeAllLayers(bpy.types.Operator):
          else:
 
            scene.finished_mapping = False
-
+           scene.finished_baking = True
 
          return {'FINISHED'}
 
@@ -417,7 +443,6 @@ class UVTexture_OT_UVLayerBakeUseTemplateOperator(bpy.types.Operator):
          os.remove(path= path)
 
 
-      
          return {'FINISHED'}
 
 
@@ -426,51 +451,111 @@ class UVTexture_OT_InitOperator(bpy.types.Operator):
    bl_label :str = "init UV_Texture"
    
    def check(self,context) -> bool:
-      pass
-   
-   def invoke(self, context, event):
-      return super().invoke(context, event)
+      
+      return True
+  
 
    def execute(self, context):
  
-      DefaultConfig = bpy.context.scene.uv_bake_image_config.add()
-      DefaultConfig.width = 1024
-      DefaultConfig.height = 1024
-      DefaultConfig.color = (0.0,0.0,0.0)
-      DefaultConfig.float32 = False
+    
 
       
-
-
-   
       return {'FINISHED'}
 
 
+def SynthesizeFinalResult(a : Any,uvlistsettings):
+    '''
+       a : image data, 
+       list : uv_texture_list
+       
+    '''
+    # check loop before two obj covered
+    def DecideLoopCoverage(ind) -> tuple[bool,str]:
+
+
+      ...
+
+    bakeObjs : list[Any] = list((item.bakeObjName for item in uvlistsettings)) 
+
+    for ind in range(len(uvlistsettings)):
+            
+         en = DecideLoopCoverage(ind)
+            
+         if(en[0]):
+
+            if ind != 0:
+               covername = uvlistsettings[ind].coverObjName
+               for element in bakeObjs:
+                  if isinstance(element,str) and covername == element:
+                     trueind = bakeObjs.index(element)
+                     tem : list[Any] = [bakeObjs[trueind]]
+                     tem.append(uvlistsettings[ind].bakeObjName)
+                     bakeObjs[trueind] = tem
+                     
+                  elif isinstance(element,list[Any]):
+                     if element[0] == covername:
+                        element[0].append(uvlistsettings[ind].bakeObjName)
+                        
+            else:
+
+               raise RuntimeError('Error : ---' + uvlistsettings[ind].bakeObjName +' and ' + en[1] + 'generate loops')
+
+
+
+    if gpuEnv.NVorAmd:
+
+       baseImage : ten.Tensor = a
+
+      
+
+    else:
+
+      pass   
+
+    ...
+
+
+
 class UVTexture_OT_RunUVTextureOperator(bpy.types.Operator):
-   '''UV_Texture main Operator '''
+   '''UV_Texture main Operator ,when we has all data we need, run this'''
 
    bl_idname :str = "object.runuvtexture"
    bl_label :str = "Run UV_Texture"
    
    
    def check(self,context) -> bool:
-       return ( bpy.context.scene.render.engine == 'CYCLES' and
-                bpy.context.scene.cycles.device == 'GPU'
-              
-              )
+
+       return True
 
 
-
-   def invoke(self, context, event):
-      return super().invoke(context, event)
 
    def execute(self, context):
 
-      
+      scene = bpy.context.scene
+      uvlistsettings = scene.uv_texture_settings
+      config = scene.uv_texture_output_config
+      size = config.textureSideLength
+
+      strackDict = UV_UI_Operators.getImageStackDict()
+         
+      re = None   
+
+      if gpuEnv.NVorAmd:
+
+         
+         re = ten.full(shape= (size,size,4),fill_value= 0.0,dtype= np.float32,gpu= True)
+
+         basestack : gpu_photo_stack.gpuImageStack = strackDict[0] # 0 elemant is base obj
+
+         ten.add(x1= re,x2= basestack.GetBakeImage(),out= re).execute() 
+
+
+      else:
+         pass
 
 
 
-
+      re = SynthesizeFinalResult(re,uvlistsettings)
 
    
       return {'FINISHED'}
