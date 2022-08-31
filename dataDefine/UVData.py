@@ -120,6 +120,14 @@ def isUseAlphaTextureUpdate(self,context):
 
     update(self= self,func= func) 
 
+def alphaFilePathUpdate(self,context):
+
+    def func(self,ind :int):
+      item = bpy.context.scene.uv_texture_settings[ind]
+      item.alphaFilePath = getattr(self,'alphaFilePath_' + str(ind))
+
+    update(self= self,func= func)
+
 def bakeTemplateTypeUpdate(self,context):
     
     def func(self,ind :int):
@@ -234,10 +242,28 @@ class UIListData:
                                                ))
 
          setattr(bpy.types.Scene,'isUseAlphaTexture_' + str(i),bpy.props.BoolProperty(
+                                               
                                                name= 'isUseAlphaTexture_' + str(i),
                                                default= True,
                                                update= isUseAlphaTextureUpdate
                                                )) 
+
+         setattr(bpy.types.Scene,'alphaFilePath_' + str(i),bpy.props.StringProperty(
+
+                                               name= 'alphaFilePath_' + str(i),
+                                               default= "",
+                                               description= "alpha file must be is a Grayscale image without alpha channel",
+                                               update= alphaFilePathUpdate
+
+                                               ))
+
+         setattr(bpy.types.Scene,'isReverseAlpha_' + str(i),bpy.props.BoolProperty(
+
+                                               name= 'isReverseAlpha_' + str(i),
+                                               default= False,
+                                               description= "true : OneMinuxAlpha"
+                                               
+                                               ))                                      
 
          setattr(bpy.types.Scene,'bakeTemplateType_' + str(i),bpy.props.EnumProperty(
                                                

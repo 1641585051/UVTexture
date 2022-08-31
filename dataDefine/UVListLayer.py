@@ -89,6 +89,28 @@ class BlendMode(enum.Enum):
     Divide = 'divide'
     '''划分'''
 
+    # alpha blend
+
+    AlphaBlend = 'alphablend'
+    '''
+       alpha blend use Unity base alpha mode \n
+       endColor = (srcColor * srcFactor) + (dstColor * dstFactor),\n
+       srcColor is downColor and dstColor mains upcolor\n
+       
+       Factor less than Unity : One ,Zero ,SrcAlpha, DstAlpha, OneMinusSrcAlpha, OneMinusDstAlpha,\n
+       don't use Color value Factor \n
+       
+       blendOp don't has Unity base Op (Add ,Sub ,Min ,Max ,RevSub), it use Other Blend Mode replace then\n
+        
+       alphaBlend don't have an explicit type on UI
+       if layer isUseAlphaTexture is True , UVTexture will use the provided alpha texture for calculation\n
+
+       
+
+    '''
+
+
+
 
 blend_id = str("BlendMode_")
 
@@ -281,6 +303,13 @@ class UVTextureLayer(bpy.types.PropertyGroup):
 
     )
 
+    alphaFilePath = bpy.props.StringProperty(
+ 
+      name="alphaFilePath",
+      description= "alpha image filepath",
+      default= ""
+       
+    )
 
     bakeTemplateType = bpy.props.EnumProperty(
 

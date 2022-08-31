@@ -15,7 +15,7 @@ import cv2
 import mars.tensor as ten
 
 
-from ..dataDefine import DataProperty,ControlAlgorithms
+from ..dataDefine import DataProperty,ControlAlgorithms,UVData
 from . import BakeNodeTreeTemplate,UV_UI_Operators
 
 from ..UVMapping import base,UVMappingOperator
@@ -422,24 +422,40 @@ class UVTexture_OT_UVLayerBakeUseTemplateOperator(bpy.types.Operator):
 
          image.save_render(filepath= path ,scene= scene)
          
-         saveImage = cv2.imread(filename= path)
+         image = cv2.imread(filename= path)
 
-         saveImage : np.ndarray = np.asarray(object= saveImage[:,:,:],dtype= np.float32)
+         saveImage : np.ndarray = np.asarray(object= image[:,:,:],dtype= np.float32)
 
-         if gpuEnv.NVorAmd:
-
-            stack : gpu_photo_stack.gpuImageStack = stackDict[scene.layer_choose_index]
+         stack : gpu_photo_stack.gpuImageStack = stackDict[scene.layer_choose_index]
             
-            if saveImage.shape[2] == 3:
-                alpha = np.full(shape= (saveImage.shape[0],saveImage.shape[1]),fill_value= 255.0,dtype= np.float32)
-                saveImage = np.hstack((saveImage,alpha))
+         alpha = np.full(shape= (saveImage.shape[0],saveImage.shape[1]),fill_value= 255.0,dtype= np.float32)
+                
+         if scene.uv_texture_settings[index].isUseAlphaTexture:
+               
+               path = scene.uv_texture_settings[index].alphaFilePath
+               
+               if os.path.isfile(path= path):
 
-            stack.SetBakeImage(image= saveImage,index= index,backgroundColor= imageConfig.colorData)
+                  alphaimage = cv2.imread(filename= path)
+                  
+                  if alphaimage.shape[2] == 3:
 
-         else:
+                     tem = np.split(np.asarray(object= alphaimage[:,:,:],dtype= np.float32),1,2)
+                     one = np.add(tem[0],tem[1]) 
+                     two = np.add(one,tem[2])
+                     alpha = two / 3
 
-            pass
-         
+         if saveImage.shape[2] == 3:
+                
+               saveImage = np.hstack((saveImage,alpha))
+
+         elif saveImage.shape[2] == 4:
+
+               arr = np.split(saveImage,[3,1],2)[0]
+               saveImage = np.hstack((arr,alpha))
+               
+         stack.SetBakeImage(image= saveImage,index= index,backgroundColor= imageConfig.colorData)
+
          os.remove(path= path)
 
 
@@ -469,21 +485,107 @@ def SynthesizeFinalResult(a : Any,uvlistsettings):
        list : uv_texture_list
        
     '''
-    # check loop before two obj covered
-    def DecideLoopCoverage(ind) -> tuple[bool,str]:
-
-
-      ...
 
     bakeObjs : list[Any] = list((item.bakeObjName for item in uvlistsettings)) 
 
-    for ind in range(len(uvlistsettings)):
+    copyObjs : list[str] = list((item.bakeObjName for item in uvlistsettings)) 
+
+    def useBlendingModesMerge(objNameList : list[str],trueDict : Any,dicts : dict[str,Any]) -> Any:
+
+        if gpuEnv.NVorAmd:
+
+           root = objNameList[0] 
+           rootDict : gpu_photo_stack.gpuImageStack = trueDict
+           rootData = rootDict.outputImageData()
+
+           for objStr in objNameList:
+               
+               if objStr != root:
+                     ...
+
+
+        else:
+
+          pass 
+
+
+
+        ...
+
+
+
+
+
+
+
+    # check loop before two obj covered
+    def DecideLoopCoverage(ind) -> tuple[bool,str]:
+
+      re : bool = False
+
+      reStr : str = ''
+
+      numDict : dict[str,int] = {}
+
+      settings = uvlistsettings[ind]
+
+      treeElement : tuple[str,str] = (settings.bakeObjName,settings.coverObjName)
+
+      numDict[treeElement[0]] = 1
+      numDict[treeElement[1]] = 1
+
+      for i in range(UVData.UIListData.layerMaxNum):
+
+         newelement = uvlistsettings[copyObjs.index(treeElement[1])] 
+         treeElement = (newelement.bakeObjName,newelement.coverObjName) 
+         
+         if not operator.contains(str(list(numDict.keys())),treeElement[0]):
+               
+               numDict[treeElement[0]] = 1
+         else:
+               numDict[treeElement[0]] +=1       
+      
+         if not operator.contains(str(list(numDict.values())),treeElement[1]):
+               
+               numDict[treeElement[1]] = 1
+         else:
+               numDict[treeElement[1]] +=1  
+         
+         if operator.contains(str(list(numDict.keys())),copyObjs[0]): # find root obj ,return True
+               re = True
+               break
+
+         if numDict[settings.bakeObjName] > 1:
+               break
+        
+
+      if re == False:
+         
+         count = list(numDict.values())
+         objs = list(numDict.keys())
+
+         findList = list(filter(lambda x: x > 2,count))
+      
+         if len(findList) == 0:
             
+            re = True
+
+         else:
+
+            reStr = str([objs[count.index(ind)] for ind in findList])
+
+
+      return (re,reStr)      
+
+
+    for ind in range(len(uvlistsettings)):
+      
+      if ind != 0:
+
          en = DecideLoopCoverage(ind)
             
          if(en[0]):
 
-            if ind != 0:
                covername = uvlistsettings[ind].coverObjName
                for element in bakeObjs:
                   if isinstance(element,str) and covername == element:
@@ -496,17 +598,33 @@ def SynthesizeFinalResult(a : Any,uvlistsettings):
                      if element[0] == covername:
                         element[0].append(uvlistsettings[ind].bakeObjName)
                         
-            else:
+         else:
 
-               raise RuntimeError('Error : ---' + uvlistsettings[ind].bakeObjName +' and ' + en[1] + 'generate loops')
+            raise RuntimeError('Error : ---' + uvlistsettings[ind].bakeObjName +' and ' + en[1] + ' generate loops')
 
-
+     
+    dicts = UV_UI_Operators.getImageStackDict() 
 
     if gpuEnv.NVorAmd:
 
+       images : dict[str,ten.Tensor] = list()
+
        baseImage : ten.Tensor = a
 
-      
+       for el in bakeObjs:
+
+         if bakeObjs.index(el) != 0:
+
+            if isinstance(el,str):
+               
+               trueDict : gpu_photo_stack.gpuImageStack = dicts[bakeObjs.index(el)]
+               images[el] = trueDict.outputImageData()
+
+            if isinstance(el,list[Any]): 
+
+               trueDict : gpu_photo_stack.gpuImageStack = dicts[bakeObjs.index(el)]
+               images[el[0]] = useBlendingModesMerge(el,trueDict,dicts)
+
 
     else:
 

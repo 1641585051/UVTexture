@@ -188,7 +188,14 @@ class UVTexture_UL_List_uv_tree(bpy.types.UIList):
          
          settingrow = othersettings.row()
          settingrow.separator()
-         settingrow.prop(data= data,property= 'isUseAlphaTexture_' + str(index),text="alpha")
+         settingrow.prop(data= data,property= 'isUseAlphaTexture_' + str(index),text="")
+         
+         isUseAlpha = getattr(data,'isUseAlphaTexture_' + str(index))
+         if isUseAlpha:
+             alphaPathrow = box.row()
+             alphaPathrow.prop(data= data,property= 'isReverseAlpha_' + str(index),text= "reverseAlpha")
+             alphaPathrow.prop(data= data,property= 'alphaFilePath_' + str(index),text= 'alphaPath',icon= 'IMAGE_ALPHA') 
+
          settingrow.prop(data= data,property= 'coverObjName_' + str(index),text="coverName")
         
          settingrow.prop(data= data,property= 'bakeObjName_' + str(index),text="bakeName")
