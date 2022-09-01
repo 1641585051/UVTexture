@@ -6,6 +6,7 @@ from typing import Any
 import bpy
 import bmesh
 import sys
+from dataDefine import UVListLayer
 import mathutils
 import operator
 
@@ -13,7 +14,7 @@ import operator
 import numpy as np
 import cv2
 import mars.tensor as ten
-
+import networkx as nx
 
 from ..dataDefine import DataProperty,ControlAlgorithms,UVData
 from . import BakeNodeTreeTemplate,UV_UI_Operators
@@ -489,19 +490,59 @@ def SynthesizeFinalResult(a : Any,uvlistsettings):
     bakeObjs : list[Any] = list((item.bakeObjName for item in uvlistsettings)) 
 
     copyObjs : list[str] = list((item.bakeObjName for item in uvlistsettings)) 
-
-    def useBlendingModesMerge(objNameList : list[str],trueDict : Any,dicts : dict[str,Any]) -> Any:
+    
+    def useBlendingModesMerge(objNameList : list[str],trueDict : Any,dicts : dict[str,Any]):
+        
+        scene = bpy.context.scene  
+        
+        re = None 
 
         if gpuEnv.NVorAmd:
 
            root = objNameList[0] 
+           rootInd = copyObjs.index(root)
            rootDict : gpu_photo_stack.gpuImageStack = trueDict
            rootData = rootDict.outputImageData()
+
+           re : ten.Tensor = ten.tensor(data= rootData.to_numpy(),shape= rootData.shape,dtype= np.float32,gpu= True)
+           re.execute()
+
+           rootisuseAlpha = scene.uv_texture_settings[rootInd].isUseAlphaTexture
+           rootisReverse = getattr(scene,'isReverseAlpha_' + str(rootInd))          
 
            for objStr in objNameList:
                
                if objStr != root:
-                     ...
+                  
+                  ind = copyObjs.index(objStr)
+                  subStack :gpu_photo_stack.gpuImageStack = dicts[ind]
+                  subData = subStack.outputImageData()
+
+                  isuseAlpha = scene.uv_texture_settings[ind].isUseAlphaTexture
+                  isReverse = getattr(scene,'isReverseAlpha_' + str(ind))          
+                  
+                  alphaBlendfunc = ControlAlgorithms.mixmodeFuncs[UVListLayer.BlendMode.AlphaBlend] # alphaBlend func
+                  # prameters ((a :ten.Tensor,b : ten.Tensor,a_revese :bool = False,b_revese : bool= False,isUseAlpha_a : bool = False,isUseAlpha_b :bool = False) -> tuple[ten.Tensor,ten.Tensor])
+                  prameters = [rootData,subData,rootisReverse,isReverse,rootisuseAlpha,isuseAlpha]
+                  temTens : tuple[ten.Tensor,ten.Tensor] = alphaBlendfunc(*prameters)
+                 
+                  mode :str =  scene.uv_texture_settings[ind].BlendMode
+                  mode = mode.split('_')[1] # BlendModeid + _ + BlendMode
+                  
+                  mixfunc = ControlAlgorithms.mixmodeFuncs[mode] 
+                  # because of alphaBlend no in CollectionProperty 
+                  # so prameters (a :ten.Tensor,b :ten.Tensor -> Any(tensor) )
+                  blendten :ten.Tensor = mixfunc(temTens[0],temTens[1])
+                 
+                  difficultTen = ten.full(shape= subData.shape,fill_value= False,gpu= True)
+                  difficultTen.execute()
+                  
+                  ten.equal(x1= subData,x2= 0.0,out= difficultTen).execute()
+                  
+                  # The zero of the mask is reversed to get the non-masked region
+                  ten.logical_not(x= difficultTen,out= difficultTen).execute() 
+                   
+                  ten.take(a= blendten,indices= difficultTen,out= re).execute() 
 
 
         else:
@@ -509,13 +550,7 @@ def SynthesizeFinalResult(a : Any,uvlistsettings):
           pass 
 
 
-
-        ...
-
-
-
-
-
+        return re
 
 
     # check loop before two obj covered
@@ -605,15 +640,17 @@ def SynthesizeFinalResult(a : Any,uvlistsettings):
      
     dicts = UV_UI_Operators.getImageStackDict() 
 
+    re = None 
+
     if gpuEnv.NVorAmd:
 
        images : dict[str,ten.Tensor] = list()
 
        baseImage : ten.Tensor = a
 
-       for el in bakeObjs:
+       re = ten.tensor(data= baseImage.to_numpy(),dtype= np.float32,gpu= True) 
 
-         if bakeObjs.index(el) != 0:
+       for el in bakeObjs:
 
             if isinstance(el,str):
                
@@ -625,12 +662,16 @@ def SynthesizeFinalResult(a : Any,uvlistsettings):
                trueDict : gpu_photo_stack.gpuImageStack = dicts[bakeObjs.index(el)]
                images[el[0]] = useBlendingModesMerge(el,trueDict,dicts)
 
+       
+        #nx.Graph()
 
     else:
 
       pass   
 
-    ...
+
+     
+    return re
 
 
 

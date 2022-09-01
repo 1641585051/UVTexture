@@ -1,6 +1,7 @@
 
 from ast import Store
 import math
+from re import X
 
 import mathutils
 
@@ -59,6 +60,7 @@ def CLighten(a :ten.Tensor,b :ten.Tensor):
   ten.compress(condition= a1,a= a,out= re).execute()
   ten.compress(condition= b1,a= b,out= re).execute() 
 
+  return re
 
 # Multiply
 def CMultiply(a :ten.Tensor,b :ten.Tensor):
@@ -377,6 +379,7 @@ def CSoftLight(a :ten.Tensor,b :ten.Tensor):
 
     ten.multiply(x1= re,x2= 255,out= re).execute()
 
+    return re 
 
 # VividLight
 def CVividLight(a :ten.Tensor,b :ten.Tensor):
@@ -433,6 +436,8 @@ def CVividLight(a :ten.Tensor,b :ten.Tensor):
     ten.take(a= more,indices= moreTen,out= re).execute()
 
     ten.multiply(x1= re,x2= 255,out= re).execute()
+
+    return re
 
 # LinearLight
 def CLinearLight(a :ten.Tensor,b :ten.Tensor):
@@ -511,6 +516,8 @@ def CPinLight(a :ten.Tensor,b :ten.Tensor):
     ten.take(a= more,indices= moreTen,out= re).execute()
 
     ten.multiply(x1= re,x2= 255,out= re).execute()
+
+    return re
 
 # HardMix
 def CHardMix(a :ten.Tensor,b :ten.Tensor):
@@ -594,6 +601,59 @@ def CDivide(a :ten.Tensor,b :ten.Tensor):
     return re
 
 
+def CAlphaBlend(a :ten.Tensor,b : ten.Tensor,a_revese :bool = False,b_revese : bool= False,isUseAlpha_a : bool = False,isUseAlpha_b :bool = False) -> tuple[ten.Tensor,ten.Tensor]:
+
+     re_a = a.copy()
+     re_b = b.copy()     
+
+     a_arr = ten.hsplit(re_a,[3,1])
+     a_arr.execute()
+     
+     tem_a = ten.full(shape= (a.shape[0],a.shape[1],3),fill_value= 0.0,dtype= np.float32,gpu= True)
+     tem_a.execute()
+     
+     b_arr = ten.hsplit(re_b,[3,1])
+     b_arr.execute()
+
+     tem_b = ten.full(shape= (b.shape[0],b.shape[1],3),fill_value= 0.0,dtype= np.float32,gpu= True)
+     tem_b.execute()
+
+     if isUseAlpha_a:
+        
+        aalphaTen = ten.tile(a_arr[1],(1,1,3)) 
+        aalphaTen.execute()
+
+        if a_revese:
+           arevese = ten.full(shape= (a.shape[0],a.shape[1],3),fill_value= 255.0,dtype= np.float32,gpu= True)
+           ten.subtract(x1= arevese,x2= aalphaTen,out= aalphaTen).execute()
+
+
+        ten.multiply(x1= a_arr[0],x2= aalphaTen,out= tem_a).execute()
+        
+     else:
+
+        ten.multiply(x1= a_arr[0],x2= 1,out= tem_a).execute() 
+       
+     if isUseAlpha_b:   
+        
+        balphaTen = ten.tile(b_arr[1],(1,1,3)) 
+        balphaTen.execute()
+
+        if b_revese:
+           brevese = ten.full(shape= (b.shape[0],b.shape[1],3),fill_value= 255.0,dtype= np.float32,gpu= True)
+           ten.subtract(x1= brevese,x2= balphaTen,out= balphaTen).execute()
+
+        
+        ten.multiply(x1= a_arr[0],x2= balphaTen,out= tem_b).execute()
+        
+     else:
+
+        ten.multiply(x1= b_arr[0],x2= 1,out= tem_a).execute() 
+           
+
+     return (tem_a,tem_b)   
+   
+
 mixmodeFuncs = {
 
    BlendMode.Normal : CNormal, #0
@@ -634,7 +694,7 @@ mixmodeFuncs = {
 
    BlendMode.Subtract : CSubtract, #18
 
-   BlendMode.Divide : CDivide #19
+   BlendMode.Divide : CDivide, #19
 
    # Deep,Shallow,Hue,Saturation,Color,Brightness
    # these are not intended to be achieved
@@ -645,6 +705,8 @@ mixmodeFuncs = {
    # whitch is not compatible with the wider RGB color space we expect to
    # use ,and to avoid conversion, does not use the HSB-related algorithm 
    # from Photoshop 
+
+   BlendMode.AlphaBlend : CAlphaBlend 
 
 
 
