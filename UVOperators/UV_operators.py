@@ -1,12 +1,12 @@
 
 import inspect
 import os
+from this import d
 from typing import Any
 
 import bpy
 import bmesh
 import sys
-from dataDefine import UVListLayer
 import mathutils
 import operator
 
@@ -14,9 +14,9 @@ import operator
 import numpy as np
 import cv2
 import mars.tensor as ten
-import networkx as nx
 
-from ..dataDefine import DataProperty,ControlAlgorithms,UVData
+
+from ..dataDefine import DataProperty,ControlAlgorithms,UVListLayer
 from . import BakeNodeTreeTemplate,UV_UI_Operators
 
 from ..UVMapping import base,UVMappingOperator
@@ -480,82 +480,80 @@ class UVTexture_OT_InitOperator(bpy.types.Operator):
       return {'FINISHED'}
 
 
-def SynthesizeFinalResult(a : Any,uvlistsettings):
-    '''
+def SynthesizeFinalResult(image_size : int,uvlistsettings):
+   '''
        a : image data, 
        list : uv_texture_list
        
-    '''
+   '''
+   scene = bpy.context.scene
 
-    bakeObjs : list[Any] = list((item.bakeObjName for item in uvlistsettings)) 
+   bakeObjs : list[Any] = list((item.bakeObjName for item in uvlistsettings)) 
 
-    copyObjs : list[str] = list((item.bakeObjName for item in uvlistsettings)) 
+   copyObjs : list[str] = list((item.bakeObjName for item in uvlistsettings)) 
     
-    def useBlendingModesMerge(objNameList : list[str],trueDict : Any,dicts : dict[str,Any]):
+   def useBlendingModesMerge(objNameList : list[str],trueDict : Any,dicts : dict[str,Any]):
         
-        scene = bpy.context.scene  
-        
-        re = None 
+      re = None 
 
-        if gpuEnv.NVorAmd:
+      if gpuEnv.NVorAmd:
 
-           root = objNameList[0] 
-           rootInd = copyObjs.index(root)
-           rootDict : gpu_photo_stack.gpuImageStack = trueDict
-           rootData = rootDict.outputImageData()
+         root = objNameList[0] 
+         rootInd = copyObjs.index(root)
+         rootDict : gpu_photo_stack.gpuImageStack = trueDict
+         rootData = rootDict.outputImageData()
 
-           re : ten.Tensor = ten.tensor(data= rootData.to_numpy(),shape= rootData.shape,dtype= np.float32,gpu= True)
-           re.execute()
+         re : ten.Tensor = ten.tensor(data= rootData.to_numpy(),shape= rootData.shape,dtype= np.float32,gpu= True)
+         re.execute()
 
-           rootisuseAlpha = scene.uv_texture_settings[rootInd].isUseAlphaTexture
-           rootisReverse = getattr(scene,'isReverseAlpha_' + str(rootInd))          
+         rootisuseAlpha = scene.uv_texture_settings[rootInd].isUseAlphaTexture
+         rootisReverse = getattr(scene,'isReverseAlpha_' + str(rootInd))          
 
-           for objStr in objNameList:
+         for objStr in objNameList:
                
-               if objStr != root:
+            if objStr != root:
                   
-                  ind = copyObjs.index(objStr)
-                  subStack :gpu_photo_stack.gpuImageStack = dicts[ind]
-                  subData = subStack.outputImageData()
+               ind = copyObjs.index(objStr)
+               subStack :gpu_photo_stack.gpuImageStack = dicts[ind]
+               subData = subStack.outputImageData()
 
-                  isuseAlpha = scene.uv_texture_settings[ind].isUseAlphaTexture
-                  isReverse = getattr(scene,'isReverseAlpha_' + str(ind))          
+               isuseAlpha = scene.uv_texture_settings[ind].isUseAlphaTexture
+               isReverse = getattr(scene,'isReverseAlpha_' + str(ind))          
                   
-                  alphaBlendfunc = ControlAlgorithms.mixmodeFuncs[UVListLayer.BlendMode.AlphaBlend] # alphaBlend func
-                  # prameters ((a :ten.Tensor,b : ten.Tensor,a_revese :bool = False,b_revese : bool= False,isUseAlpha_a : bool = False,isUseAlpha_b :bool = False) -> tuple[ten.Tensor,ten.Tensor])
-                  prameters = [rootData,subData,rootisReverse,isReverse,rootisuseAlpha,isuseAlpha]
-                  temTens : tuple[ten.Tensor,ten.Tensor] = alphaBlendfunc(*prameters)
+               alphaBlendfunc = ControlAlgorithms.mixmodeFuncs[UVListLayer.BlendMode.AlphaBlend] # alphaBlend func
+               # prameters ((a :ten.Tensor,b : ten.Tensor,a_revese :bool = False,b_revese : bool= False,isUseAlpha_a : bool = False,isUseAlpha_b :bool = False) -> tuple[ten.Tensor,ten.Tensor])
+               prameters = [rootData,subData,rootisReverse,isReverse,rootisuseAlpha,isuseAlpha]
+               temTens : tuple[ten.Tensor,ten.Tensor] = alphaBlendfunc(*prameters)
                  
-                  mode :str =  scene.uv_texture_settings[ind].BlendMode
-                  mode = mode.split('_')[1] # BlendModeid + _ + BlendMode
+               mode :str =  scene.uv_texture_settings[ind].BlendMode
+               mode = mode.split('_')[1] # BlendModeid + _ + BlendMode
                   
-                  mixfunc = ControlAlgorithms.mixmodeFuncs[mode] 
-                  # because of alphaBlend no in CollectionProperty 
-                  # so prameters (a :ten.Tensor,b :ten.Tensor -> Any(tensor) )
-                  blendten :ten.Tensor = mixfunc(temTens[0],temTens[1])
+               mixfunc = ControlAlgorithms.mixmodeFuncs[mode] 
+               # because of alphaBlend no in CollectionProperty 
+               # so prameters (a :ten.Tensor,b :ten.Tensor -> Any(tensor) )
+               blendten :ten.Tensor = mixfunc(temTens[0],temTens[1])
                  
-                  difficultTen = ten.full(shape= subData.shape,fill_value= False,gpu= True)
-                  difficultTen.execute()
+               difficultTen = ten.full(shape= subData.shape,fill_value= False,gpu= True)
+               difficultTen.execute()
                   
-                  ten.equal(x1= subData,x2= 0.0,out= difficultTen).execute()
+               ten.equal(x1= subData,x2= 0.0,out= difficultTen).execute()
                   
-                  # The zero of the mask is reversed to get the non-masked region
-                  ten.logical_not(x= difficultTen,out= difficultTen).execute() 
+               # The zero of the mask is reversed to get the non-masked region
+               ten.logical_not(x= difficultTen,out= difficultTen).execute() 
                    
-                  ten.take(a= blendten,indices= difficultTen,out= re).execute() 
+               ten.take(a= blendten,indices= difficultTen,out= re).execute() 
 
 
-        else:
+      else:
 
           pass 
 
 
-        return re
-
+      return re
 
     # check loop before two obj covered
-    def DecideLoopCoverage(ind) -> tuple[bool,str]:
-
+   def DecideLoopCoverage(ind) -> tuple[bool,str]:
+ 
       re : bool = False
 
       reStr : str = ''
@@ -569,7 +567,7 @@ def SynthesizeFinalResult(a : Any,uvlistsettings):
       numDict[treeElement[0]] = 1
       numDict[treeElement[1]] = 1
 
-      for i in range(UVData.UIListData.layerMaxNum):
+      for i in range(scene.uilistData.layerMaxNum):
 
          newelement = uvlistsettings[copyObjs.index(treeElement[1])] 
          treeElement = (newelement.bakeObjName,newelement.coverObjName) 
@@ -613,7 +611,7 @@ def SynthesizeFinalResult(a : Any,uvlistsettings):
       return (re,reStr)      
 
 
-    for ind in range(len(uvlistsettings)):
+   for ind in range(len(uvlistsettings)):
       
       if ind != 0:
 
@@ -638,45 +636,101 @@ def SynthesizeFinalResult(a : Any,uvlistsettings):
             raise RuntimeError('Error : ---' + uvlistsettings[ind].bakeObjName +' and ' + en[1] + ' generate loops')
 
      
-    dicts = UV_UI_Operators.getImageStackDict() 
+   dicts = UV_UI_Operators.getImageStackDict() 
 
-    re = None 
+   re = None 
 
-    if gpuEnv.NVorAmd:
+   if gpuEnv.NVorAmd:
 
-       images : dict[str,ten.Tensor] = list()
+      images : dict[str,ten.Tensor] = list()
 
-       baseImage : ten.Tensor = a
+      for el in bakeObjs:
 
-       re = ten.tensor(data= baseImage.to_numpy(),dtype= np.float32,gpu= True) 
-
-       for el in bakeObjs:
-
-            if isinstance(el,str):
-               
-               trueDict : gpu_photo_stack.gpuImageStack = dicts[bakeObjs.index(el)]
-               images[el] = trueDict.outputImageData()
-
-            if isinstance(el,list[Any]): 
+            if isinstance(el,list[Any]): # ignore don't have subObj el
 
                trueDict : gpu_photo_stack.gpuImageStack = dicts[bakeObjs.index(el)]
                images[el[0]] = useBlendingModesMerge(el,trueDict,dicts)
+            
+            #if isinstance(el,str):
+               
+      objs = list(images.keys())
 
-       
-        #nx.Graph()
+      def GetRootDistance(el :str) -> int:
 
-    else:
+         settings = uvlistsettings[copyObjs.index(el)]
+
+         count :int = 0
+
+         for i in range(scene.uilistData.layerMaxNum):
+               
+            settings = uvlistsettings[copyObjs.index(settings.coverObjName)]
+               
+            count += 1
+            if settings.bakeObjName == objs[0]:
+               break
+
+         return count          
+
+    
+      temObjs = list(images.keys())
+      temObjs.remove(temObjs[0])
+         
+      distancelist :list[int] = []   
+      temDistanceDict : dict[int,str] = {}
+
+      for sor in temObjs:
+
+         distance = GetRootDistance(sor)
+
+         distancelist.append(distance)
+         temDistanceDict[distance] = sor
+
+      distancelist.sort()  #default ascending sorting
+      
+      overstart = 0
+      for trueEl in distancelist:
+
+          temObjs[overstart] = temDistanceDict[trueEl]
+          overstart += 1
+
+      def makeImage(image :ten.Tensor,coverImage: ten.Tensor):
+           
+          mask = ten.full(shape= coverImage.shape,fill_value= False,gpu= True)
+          mask.execute()
+          
+          ten.equal(x1= coverImage,x2= 0.0,out= mask).execute() 
+          ten.logical_not(x= mask,out= mask).execute()
+
+          ten.take(a= coverImage,indices= mask,out= image).execute()  
+
+      re = ten.full(shape= (image_size,image_size,3),fill_value= 1.0,dtype= np.float32,gpu=True)
+      re.execute() # use while backGround
+      
+      baseImage = images[objs[0]] 
+      makeImage(re,baseImage)
+
+      for endImageName in temObjs:
+          makeImage(re,images[endImageName])
+
+
+   else:
 
       pass   
 
 
      
-    return re
+   return re
 
 
 
 class UVTexture_OT_RunUVTextureOperator(bpy.types.Operator):
-   '''UV_Texture main Operator ,when we has all data we need, run this'''
+   '''
+      UV_Texture main Operator ,when we has all data we need, run this\n
+      
+      warring : UV_texture color don't have BLACK COLOR (0.0,0.0,0.0),
+      becuse it is mask color,
+
+   '''
 
    bl_idname :str = "object.runuvtexture"
    bl_label :str = "Run UV_Texture"
@@ -694,28 +748,20 @@ class UVTexture_OT_RunUVTextureOperator(bpy.types.Operator):
       uvlistsettings = scene.uv_texture_settings
       config = scene.uv_texture_output_config
       size = config.textureSideLength
+  
+      re = SynthesizeFinalResult(size,uvlistsettings)
 
-      strackDict = UV_UI_Operators.getImageStackDict()
-         
-      re = None   
-
-      if gpuEnv.NVorAmd:
-
-         
-         re = ten.full(shape= (size,size,4),fill_value= 0.0,dtype= np.float32,gpu= True)
-
-         basestack : gpu_photo_stack.gpuImageStack = strackDict[0] # 0 elemant is base obj
-
-         ten.add(x1= re,x2= basestack.GetBakeImage(),out= re).execute() 
-
-
-      else:
-         pass
-
-
-
-      re = SynthesizeFinalResult(re,uvlistsettings)
-
+      npImage : np.ndarray = re.to_numpy()
    
+      path = config.outputImageFilePath
+      
+      if config != '' and os.path.isfile(path):
+
+         cv2.imwrite(path,npImage)
+
+      else :
+         raise RuntimeError('Error: ----' + 'path : ' + path + ' no find')
+
+
       return {'FINISHED'}
 

@@ -30,6 +30,7 @@ class UVTexture_PT_output_config(bpy.types.Panel):
 
       two.prop(scene,'mappingSampleNums',text= 'SampleNums',icon= 'OUTLINER_DATA_LIGHTPROBE') 
 
+      two.prop(scene,'outputImageFilePath',text= 'outputImagePath') 
       
 
 

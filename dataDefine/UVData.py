@@ -62,6 +62,15 @@ def mappingSampleNumsUpdate(self,context):
     
     config.mappingSampleNums = mappingSampleNums
 
+def outputImageFilePathUpdate(self,context):
+
+    scene = bpy.context.scene
+
+    config = scene.uv_texture_output_config[0]
+
+    outputImageFilePath = getattr(self,'outputImageFilePath')
+
+    config.outputImageFilePath = outputImageFilePath 
 
 
 def update(self,func):
@@ -204,6 +213,15 @@ class UIListData:
                                                update= mappingSampleNumsUpdate
 
                                                ))
+
+
+      setattr(bpy.types.Scene,'outputImageFilePath',bpy.props.StringProperty(
+
+                                               name= 'outputImageFilePath',
+                                               default= '',
+                                               update= outputImageFilePathUpdate
+
+                                               ))                                         
 
 
       for i in range(listData.layerMaxNum):

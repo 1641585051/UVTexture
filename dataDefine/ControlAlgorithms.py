@@ -602,7 +602,7 @@ def CDivide(a :ten.Tensor,b :ten.Tensor):
 
 
 def CAlphaBlend(a :ten.Tensor,b : ten.Tensor,a_revese :bool = False,b_revese : bool= False,isUseAlpha_a : bool = False,isUseAlpha_b :bool = False) -> tuple[ten.Tensor,ten.Tensor]:
-
+     ''' alpha blend return (m,n,3) shape ,differect from other blend func,they don't remove alpha chneel'''
      re_a = a.copy()
      re_b = b.copy()     
 

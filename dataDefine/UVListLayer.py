@@ -268,7 +268,7 @@ bakeTemplates = [
 
 class UVTextureLayer(bpy.types.PropertyGroup):
 
-    coverObjName = bpy.props.StringProperty(
+    coverObjName : bpy.props.StringProperty(
        name="coverObjName",
        description="CoverObjName",
        default="Default",
@@ -276,7 +276,7 @@ class UVTextureLayer(bpy.types.PropertyGroup):
 
     ) 
 
-    bakeObjName = bpy.props.StringProperty(
+    bakeObjName : bpy.props.StringProperty(
        name="bakeObjName",
        description="BakeObjName",
        default="Default",
@@ -285,7 +285,7 @@ class UVTextureLayer(bpy.types.PropertyGroup):
     )
    
     
-    blendMode = bpy.props.EnumProperty(
+    blendMode : bpy.props.EnumProperty(
       
        items= modes,
        name="blendMode",
@@ -295,7 +295,7 @@ class UVTextureLayer(bpy.types.PropertyGroup):
       
     ) 
 
-    isUseAlphaTexture = bpy.props.BoolProperty(
+    isUseAlphaTexture : bpy.props.BoolProperty(
        
        name="isUseAlphaTexture",
        description="using AlphaTexture is or not",
@@ -303,7 +303,7 @@ class UVTextureLayer(bpy.types.PropertyGroup):
 
     )
 
-    alphaFilePath = bpy.props.StringProperty(
+    alphaFilePath : bpy.props.StringProperty(
  
       name="alphaFilePath",
       description= "alpha image filepath",
@@ -311,7 +311,7 @@ class UVTextureLayer(bpy.types.PropertyGroup):
        
     )
 
-    bakeTemplateType = bpy.props.EnumProperty(
+    bakeTemplateType : bpy.props.EnumProperty(
 
       items= bakeTemplates,
       name= "bakeTemplate",
@@ -489,7 +489,7 @@ drawfuncs : dict[str,Any] = {
 #expend
 class UVImage_stack_item(bpy.types.PropertyGroup):
     
-    stackActive = bpy.props.BoolProperty(
+    stackActive : bpy.props.BoolProperty(
 
       name= 'stackActive',
       description= 'stack_item_active',
@@ -497,7 +497,7 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
 
     )
 
-    effectType = bpy.props.EnumProperty(
+    effectType : bpy.props.EnumProperty(
 
       items= alltypes,
       name= 'effectType',
@@ -509,7 +509,7 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
     # a pool of parameters for all controls
 
     # Gaussian
-    r = bpy.props.FloatProperty(
+    r : bpy.props.FloatProperty(
 
       name= 'r',
       default= 1.50,
@@ -518,7 +518,7 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
     )
 
     # Box
-    xblur = bpy.props.IntProperty(
+    xblur : bpy.props.IntProperty(
 
       name='xblur',
       default= 1,
@@ -527,7 +527,7 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
     )
 
     # Box
-    yblur = bpy.props.IntProperty(
+    yblur : bpy.props.IntProperty(
 
       name= 'yblur',
       default= 1,
@@ -536,7 +536,7 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
     )
 
     # Strock Base
-    strockweith = bpy.props.IntProperty(
+    strockweith : bpy.props.IntProperty(
 
       name= 'strockweith',
       default= 1,
@@ -545,7 +545,7 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
     )
     
     # Strock Base
-    color = bpy.props.FloatVectorProperty(
+    color : bpy.props.FloatVectorProperty(
 
       name= 'color',
       default= (0.0,0.0,0.0),

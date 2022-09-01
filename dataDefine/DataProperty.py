@@ -1,4 +1,5 @@
 
+import os
 import bpy
 from bpy.types import Struct
 from .UVData import UIListData
@@ -6,13 +7,9 @@ from .UVData import UIListData
 from .UVListLayer import UVTextureLayer,UVImage_stack_item
 
 
-
-
-
-
 class UVTextureOutPutConfig(bpy.types.PropertyGroup):
 
-    textureSideLength = bpy.props.IntProperty(
+    textureSideLength : bpy.props.IntProperty(
 
        name='textureSideLength',
        description= 'output texture side length',
@@ -23,7 +20,7 @@ class UVTextureOutPutConfig(bpy.types.PropertyGroup):
 
     )
 
-    float32 = bpy.props.BoolProperty(
+    float32 : bpy.props.BoolProperty(
 
         name='isUseFloat32',
         description= "use 32-bit float image",
@@ -32,7 +29,7 @@ class UVTextureOutPutConfig(bpy.types.PropertyGroup):
         )
 
     
-    mappingSampleNums = bpy.props.IntProperty(
+    mappingSampleNums : bpy.props.IntProperty(
 
         name='mappingSampleNums',
         description="uv Mapping sample Nums (to Determine the mapping location)",
@@ -41,6 +38,15 @@ class UVTextureOutPutConfig(bpy.types.PropertyGroup):
         max=1024
 
     )        
+
+    outputImageFilePath : bpy.props.StringProperty(
+
+       name= 'outputImageFilePath',
+       description= 'output image path',
+       default= ''
+
+
+    )
 
 
 
@@ -54,7 +60,7 @@ class BakeExtendTemplateData(bpy.types.PropertyGroup):
      '''
 
 
-    color = bpy.props.FloatVectorProperty(
+    color : bpy.props.FloatVectorProperty(
 
       name='color',
       description= 'bake color',
@@ -64,7 +70,7 @@ class BakeExtendTemplateData(bpy.types.PropertyGroup):
 
     )
 
-    strengh = bpy.props.FloatProperty(
+    strengh : bpy.props.FloatProperty(
       
       name= 'strengh',
       description= 'bake strengh in Emisson',
@@ -103,7 +109,7 @@ class UVBakeImageConfig(bpy.types.PropertyGroup):
      width / height must is one''' 
 
 
-     width = bpy.props.IntProperty(
+     width : bpy.props.IntProperty(
         
         name='width',
         description= "image width",
@@ -113,7 +119,7 @@ class UVBakeImageConfig(bpy.types.PropertyGroup):
         
         )
 
-     height = bpy.props.IntProperty(
+     height : bpy.props.IntProperty(
         
         name='height',
         description= "image width",
@@ -123,7 +129,7 @@ class UVBakeImageConfig(bpy.types.PropertyGroup):
         
         )
      
-     color = bpy.props.FloatVectorProperty(
+     color : bpy.props.FloatVectorProperty(
 
         name='color',
         description= "image color",
@@ -133,7 +139,7 @@ class UVBakeImageConfig(bpy.types.PropertyGroup):
         
         )
 
-     float32 = bpy.props.BoolProperty(
+     float32 : bpy.props.BoolProperty(
 
         name='isUseFloat32',
         description= "use 32-bit float image",
@@ -145,7 +151,7 @@ class UVBakeImageConfig(bpy.types.PropertyGroup):
 
 class UVTree_list_item(bpy.types.PropertyGroup):
 
-    active = bpy.props.BoolProperty(
+    active : bpy.props.BoolProperty(
 
         name="active",
         description="layout is active?",
@@ -154,7 +160,7 @@ class UVTree_list_item(bpy.types.PropertyGroup):
     
     )
     
-    layerName = bpy.props.StringProperty(
+    layerName : bpy.props.StringProperty(
         
         name="ayerName",
         description="uv texture layout name",
@@ -167,7 +173,7 @@ class UVTree_list_item(bpy.types.PropertyGroup):
 class SystemData(bpy.types.PropertyGroup):
     ''' system data set '''
 
-    floatingInterval = bpy.props.IntProperty(
+    floatingInterval : bpy.props.IntProperty(
 
       name='floatingInterval',
       description= 'render floatingInterval',
@@ -190,13 +196,13 @@ class SystemData(bpy.types.PropertyGroup):
 
 
 
-def InitOutPutConfig():
+def InitOutPutConfig(scene):
 
-    scene = bpy.context.scene
-    item = scene.uv_texture_output_config.add()
-    item.textureSideLength = 1024
-    item.float32 = False
-    item.mappingSampleNums = 512
+    citem = scene.uv_texture_output_config.add()
+    citem.textureSideLength = 1024
+    citem.float32 = False
+    citem.mappingSampleNums = 512
+    citem.outputImageFilePath = ''
 
 
 

@@ -114,7 +114,7 @@ class gpuImageStack:
     __stackgpudata :ten.Tensor = None
 
     
-    def __init__(self,stackIndex : int,stackItemWidth = 1024,stackItemheight = 1024,is64Bit: bool = False):
+    def __init__(self,stackIndex : int,stackItemWidth : int = 1024,stackItemheight : int = 1024,is64Bit: bool = False):
       
       self.__width = stackItemWidth
       self.__height = stackItemheight
@@ -425,11 +425,13 @@ class gpuImageStack:
        images = ten.hsplit(a= self.__stackgpudata,indices_or_sections= 4)
        images.execute()
 
-       re = ten.full(shape= self.__stackgpudata.shape,fill_value= 0.0,dtype= self.__type,gpu= True) 
+       re = ten.full(shape= (self.__stackgpudata.shape[0],self.__stackgpudata.shape[0],4),fill_value= 0.0,dtype= self.__type,gpu= True) 
+       
+       reImages = list(images)
+       for i in range(len(reImages)):
 
-       for i in range(len(list(images))):
+         ten.add(x1= re,x2= reImages[i],out= re).execute()
 
-         ten.add(x1= re,x2= images[i],out= re).execute()
 
        return re
       

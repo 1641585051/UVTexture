@@ -2,7 +2,7 @@
 
 from typing import Any
 import bpy
-
+import bpy_extras
 
 from ..dataDefine import DataProperty,UVListLayer
 
@@ -205,15 +205,20 @@ class UITree_OT_createItem(bpy.types.Operator):
         item = scene.uv_texture_list.add() 
         scene.uv_texture_list_index +=1
 
+        outconfig = None
         if len(scene.uv_texture_output_config) == 0:
-            DataProperty.InitOutPutConfig() 
-
+            
+            DataProperty.InitOutPutConfig(scene) 
+        
+        outconfig = scene.uv_texture_output_config[0]
+ 
         config = scene.uv_bake_image_config.add()
-        config.width = scene.uv_texture_output_config[0].textureSideLength
-        config.height = scene.uv_texture_output_config[0].textureSideLength
+        config.width = outconfig.textureSideLength
+        config.height = outconfig.textureSideLength
         config.color = (255.0 * 0.645,255.0 * 0.645,255.0 * 0.645)
-        config.float32 = scene.uv_texture_output_config[0].float32 
+        config.float32 = outconfig.float32 
 
+       
         if gpuEnv.NVorAmd:
                     # init CUDA context struct
                 image_stack_Struct[scene.uv_texture_list_index] = gpu_photo_stack.gpuImageStack(
@@ -245,8 +250,6 @@ class UITree_OT_createItem(bpy.types.Operator):
     
     
 
-
-
 class UITree_OT_deleteItem(bpy.types.Operator):
     bl_idname: str = "object.deletelayer"
     bl_label: str = "delete layer"
@@ -268,6 +271,8 @@ class UITree_OT_deleteItem(bpy.types.Operator):
         scene.uv_texture_list_index = min(max(0,index - 1),len(scene.uv_texture_list) - 1)
 
         return {"FINISHED"}
+
+
 
 
 
