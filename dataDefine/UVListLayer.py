@@ -502,7 +502,7 @@ class UVImage_stack_item(bpy.types.PropertyGroup):
       items= alltypes,
       name= 'effectType',
       description= 'all effect enums',
-      default= 'None'
+      default= blur_id + str(BlurType.Null)
 
     )
 

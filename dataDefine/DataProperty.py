@@ -185,17 +185,6 @@ class SystemData(bpy.types.PropertyGroup):
     )
 
 
-    @classmethod
-    def bl_rna_get_subclass(cls, id: str, default=None) -> Struct:
-        return super().bl_rna_get_subclass(cls,id,default)
-
-
-    @classmethod
-    def bl_rna_get_subclass_py(cls, id: str, default=None):
-        super().bl_rna_get_subclass_py(cls,id,default)
-
-
-
 def InitOutPutConfig(scene):
 
     citem = scene.uv_texture_output_config.add()
@@ -231,7 +220,6 @@ def UVTextureProperties():
 
         )
     '''this datq need bind UI : draw in class(UVTexture_UL_List_uv_tree) from templateList func item'''  
-
 
 
     bpy.types.Scene.uv_texture_settings = bpy.props.CollectionProperty(

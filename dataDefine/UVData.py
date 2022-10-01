@@ -27,7 +27,7 @@ def textureSideLengthUpdate(self,context):
 
     # get globel image stacks 
     stacks = UV_UI_Operators.getImageStackDict()
-    if gpuEnv.NVorAmd:
+    if gpuEnv.NVAmdorOther:
 
         stack : gpu_photo_stack.gpuImageStack = stacks[index]
         stack.ResetStackSize(width= size,height= size)

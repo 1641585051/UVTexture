@@ -1,18 +1,15 @@
 
-from ast import Store
+
 import math
-from re import X
 
 import mathutils
 
 import numpy as np
 import taichi as ti
-import mars.tensor as ten
+import cupy as ten
 
 
 from .UVListLayer import BlendMode, BlurType, Stroke
-
-##       CUDA         ##
 
 #------------------------blendMode----------------------------#
 
@@ -24,631 +21,600 @@ from .UVListLayer import BlendMode, BlurType, Stroke
 
 
 # Normal 
-def CNormal(a :ten.Tensor ,b : ten.Tensor):
+def CNormal(a :ten.ndarray ,b : ten.ndarray):
 
    return b 
 
 # Darken
-def CDarken(a :ten.Tensor,b :ten.Tensor):
+def CDarken(a :ten.ndarray,b :ten.ndarray):
   ''' reture a <= b => a or b <=a => b'''
-  re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-  re.execute()  
-  a1 = ten.zeros(shape= a.shape,dtype= np.bool8,gpu= True)
-  a1.execute()
-  b1 = ten.zeros(shape= b.shape,dtype= np.bool8,gpu= True)
-  b1.execute()
-  ten.less_equal(x1= a,x2= b,out= a1).execute()
-  ten.less_equal(x1= b,x2= a, out= b1).execute()
+  re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+ 
+  a1 = ten.zeros(shape= ten.shape(a),dtype= np.bool8)
+ 
+  b1 = ten.zeros(shape= ten.shape(b),dtype= np.bool8)
+  
+  ten.less_equal(x1= a,x2= b,out= a1)
+  ten.less_equal(x1= b,x2= a, out= b1)
 
-  ten.compress(condition= a1,a= a,out= re).execute()
-  ten.compress(condition= b1,a= b,out= re).execute() 
+  ten.compress(condition= a1,a= a,out= re)
+  ten.compress(condition= b1,a= b,out= re)
 
   return re
 
 # Lighten
-def CLighten(a :ten.Tensor,b :ten.Tensor):
+def CLighten(a :ten.ndarray,b :ten.ndarray):
   ''' reture a >= b => a or b >=a => b'''
-  re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-  re.execute()  
-  a1 = ten.full(shape= a.shape,fill_value= False,gpu=True)
-  a1.execute()
-  b1 = ten.full(shape= b.shape,fill_value= False,gpu= True)
-  b1.execute()
-  ten.greater_equal(x1= a,x2= b,out= a1).execute()
-  ten.greater_equal(x1= b,x2= a, out= b1).execute()
+  re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+  
+  a1 = ten.full(shape= ten.shape(a),fill_value= False)
+  
+  b1 = ten.full(shape= ten.shape(b),fill_value= False)
+  
+  ten.greater_equal(x1= a,x2= b,out= a1)
+  ten.greater_equal(x1= b,x2= a, out= b1)
 
-  ten.compress(condition= a1,a= a,out= re).execute()
-  ten.compress(condition= b1,a= b,out= re).execute() 
+  ten.compress(condition= a1,a= a,out= re)
+  ten.compress(condition= b1,a= b,out= re) 
 
   return re
 
 # Multiply
-def CMultiply(a :ten.Tensor,b :ten.Tensor):
+def CMultiply(a :ten.ndarray,b :ten.ndarray):
    
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
- 
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+     
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
+    ten.true_divide(x1= a,x2= 255,out= a1)
 
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+   
+    ten.true_divide(x1= b,x2= 255,out= b1)
 
-    ten.multiply(x1=a,x2=b,out= re).execute()
+    ten.multiply(x1=a,x2=b,out= re)
     # to 0 -255 
-    ten.multiply(x1= re,x2= 255,out= re).execute()
+    ten.multiply(x1= re,x2= 255,out= re)
 
     return re
 
 
 # Screen
 
-def CScreen(a :ten.Tensor,b :ten.Tensor):
+def CScreen(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
- 
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+      
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
+    ten.true_divide(x1= a,x2= 255,out= a1)
 
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+    
+    ten.true_divide(x1= b,x2= 255,out= b1)
 
-    ten.subtract(x1= a1,x2= 1,out= a1).execute()
+    ten.subtract(x1= a1,x2= 1,out= a1)
 
-    ten.abs(x= a1,out= a1).execute()
+    ten.abs(x= a1,out= a1)
 
-    ten.subtract(x1= b1,x2= 1,out= b1).execute()
+    ten.subtract(x1= b1,x2= 1,out= b1)
 
-    ten.abs(x= b1,out= b1).execute()
+    ten.abs(x= b1,out= b1)
 
-    ten.multiply(x1= a1,x2= b1,out= re).execute()
+    ten.multiply(x1= a1,x2= b1,out= re)
 
-    ten.subtract(x1= re,x2= 1,out= re).execute()
+    ten.subtract(x1= re,x2= 1,out= re)
 
-    ten.abs(x= re,out= re).execute()
+    ten.abs(x= re,out= re)
 
-    ten.multiply(x1= re,x2= 255,out= re).execute()
+    ten.multiply(x1= re,x2= 255,out= re)
 
     return re
 
 
 # ColorDodge
-def CColorDodge(a :ten.Tensor,b :ten.Tensor):
+def CColorDodge(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
  
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+   
+    ten.true_divide(x1= a,x2= 255,out= a1)
 
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+   
+    ten.true_divide(x1= b,x2= 255,out= b1)
 
-    ten.subtract(x1= b,x2= 1,out= b1).execute()
+    ten.subtract(x1= b,x2= 1,out= b1)
 
-    ten.abs(x= b1,out= b1).execute()
+    ten.abs(x= b1,out= b1)
     
     # if b1 == 0 need avoid this form happening
-    ten.add(x1= b1,x2= 0.0001,out= b1).execute() 
+    ten.add(x1= b1,x2= 0.0001,out= b1)
 
-    ten.true_divide(x1= a1,x2= b1,out= re).execute()
+    ten.true_divide(x1= a1,x2= b1,out= re)
 
-    tem = ten.full(shape= re.shape,fill_value= False,gpu=True)
+    tem = ten.full(shape= ten.shape(re),fill_value= False)
 
-    ten.less_equal(x1= re,x2= 1,out=tem).execute()
+    ten.less_equal(x1= re,x2= 1,out=tem)
     
-    re2 = ten.full(shape= re.shape,fill_value= 1,gpu= True)
-    re2.execute()
+    re2 = ten.full(shape= ten.shape(re),fill_value= 1)
 
-    ten.take(a= re,indices= tem,out= re2).execute()
+    ten.take(a= re,indices= tem,out= re2)
 
-    ten.multiply(x1= re2,x2= 255,out= re).execute()
+    ten.multiply(x1= re2,x2= 255,out= re)
 
     return re2
 
 
 # ColorBurn
-def CColorBurn(a :ten.Tensor,b :ten.Tensor):
+def CColorBurn(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
- 
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
+    ten.true_divide(x1= a,x2= 255,out= a1)
 
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+    
+    ten.true_divide(x1= b,x2= 255,out= b1)
 
-    ten.subtract(x1= a,x2= 1,out= a1).execute()
+    ten.subtract(x1= a,x2= 1,out= a1)
 
-    ten.abs(x= a1,out= a1).execute()
+    ten.abs(x= a1,out= a1)
 
     # if b1 == 0 need avoid this form happening
-    ten.add(x1= a1,x2= 0.0001,out= a1).execute() 
+    ten.add(x1= a1,x2= 0.0001,out= a1)
 
-    ten.true_divide(x1= a1,x2= b1,out= re).execute()
+    ten.true_divide(x1= a1,x2= b1,out= re)
 
-    tem = ten.full(shape= re.shape,fill_value= False,gpu=True)
+    tem = ten.full(shape= ten.shape(re),fill_value= False)
 
-    ten.less_equal(x1= re,x2= 1,out=tem).execute()
+    ten.less_equal(x1= re,x2= 1,out=tem)
     
-    re2 = ten.full(shape= re.shape,fill_value= 1,gpu= True)
-    re2.execute()
+    re2 = ten.full(shape= ten.shape(re),fill_value= 1)
 
-    ten.take(a= re,indices= tem,out= re2).execute()
+    ten.take(a= re,indices= tem,out= re2)
 
-    ten.subtract(x1= re2,x2= 1,out= re).execute()
+    ten.subtract(x1= re2,x2= 1,out= re)
 
-    ten.abs(x= re2,out= re2).execute()
+    ten.abs(x= re2,out= re2)
 
-    ten.multiply(x1= re2,x2= 255,out= re).execute()
+    ten.multiply(x1= re2,x2= 255,out= re)
 
     return re2
 
 # LinearDodge
-def CLinearDodge(a :ten.Tensor,b :ten.Tensor):
+def CLinearDodge(a :ten.ndarray,b :ten.ndarray):
 
-   re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-   re.execute()  
+   re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
 
-   ten.add(x1= a,x2= b,out=re).execute()
+   ten.add(x1= a,x2= b,out=re)
+   
    return re
-   ...
-
-
+   
 # LinearBurn
-def CLinearBurn(a :ten.Tensor,b :ten.Tensor):
+def CLinearBurn(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)  
  
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
-
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
-
-    ten.add(x1= a1,x2= b1,out= re).execute()
-
-    ten.subtract(x1= re, x2= 1,out= re).execute()
-
-    tem = ten.full(shape= re.shape,fill_value= False,gpu=True)
-    tem.execute()
-
-    ten.greater_equal(x1= re,x2= 0,out=tem).execute()
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
     
-    re2 = ten.full(shape= re.shape,fill_value= 0,gpu= True)
-    re2.execute()
+    ten.true_divide(x1= a,x2= 255,out= a1)
 
-    ten.take(a= re,indices= tem,out= re2).execute()
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+  
+    ten.true_divide(x1= b,x2= 255,out= b1)
 
-    ten.multiply(x1= re2,x2= 255,out= re).execute()
+    ten.add(x1= a1,x2= b1,out= re)
+
+    ten.subtract(x1= re, x2= 1,out= re)
+
+    tem = ten.full(shape= ten.shape(re),fill_value= False)
+
+    ten.greater_equal(x1= re,x2= 0,out=tem)
+    
+    re2 = ten.full(shape= ten.shape(re),fill_value= 0)
+
+    ten.take(a= re,indices= tem,out= re2)
+
+    ten.multiply(x1= re2,x2= 255,out= re)
 
     return re2
 
 # Overlay
-def COverlay(a :ten.Tensor,b :ten.Tensor):
+def COverlay(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
- 
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
 
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
+    ten.true_divide(x1= a,x2= 255,out= a1)
 
-    less = ten.zeros(shape= re.shape,dtype= np.float32,gpu= True)
-    less.execute()
-    lessTen = ten.full(shape= re.shape,fill_value= False,gpu= True)
-    lessTen.execute()
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+    
+    ten.true_divide(x1= b,x2= 255,out= b1)
 
-    ten.less_equal(x1= a1,x2= 0.50,out=lessTen).execute()
+    less = ten.zeros(shape= ten.shape(re),dtype= np.float32)
+    
+    lessTen = ten.full(shape= ten.shape(re),fill_value= False)
+    
+    ten.less_equal(x1= a1,x2= 0.50,out=lessTen)
 
-    ten.take(a= a1,indices= lessTen,out= less).execute()
+    ten.take(a= a1,indices= lessTen,out= less)
 
-    ten.multiply(x1= less,x2= b1,out= less).execute()
-    ten.multiply(x1= less,x2= 2,out= less).execute()
+    ten.multiply(x1= less,x2= b1,out= less)
+    ten.multiply(x1= less,x2= 2,out= less)
 
-    more = ten.zeros(shape= re.shape,dtype= np.float32,gpu= True)
-    more.execute()
-    moreTen = ten.full(shape= re.shape,fill_value= False,gpu= True)
-    moreTen.execute()
+    more = ten.zeros(shape= ten.shape(re),dtype= np.float32)
 
-    ten.greater(x1= a1,x2= 0.50,out= moreTen).execute()
-    ten.take(a= a1,indices= moreTen,out= more).execute()
+    moreTen = ten.full(shape= ten.shape(re),fill_value= False)
 
-    ten.subtract(x1= more,x2= 1,out= more).exevute()
-    ten.abs(x= more,out= more).execute()
+    ten.greater(x1= a1,x2= 0.50,out= moreTen)
 
-    more2 = ten.zeros(shape= re.shape,dtype= np.float32,gpu= True)
-    more2.execute()
-    ten.subtract(x1= b1,x2= 1,out= more2).execute()
-    ten.abs(x= more2,out= more2).execute()
+    ten.take(a= a1,indices= moreTen,out= more)
 
-    ten.multiply(x1= more,x2= more2,out= more).execute()
+    ten.subtract(x1= more,x2= 1,out= more)
 
-    ten.multiply(x1= more,x2= 2,out= more).execute()
+    ten.abs(x= more,out= more)
 
-    ten.subtract(x1= more,x2= 1,out= more).execute()
+    more2 = ten.zeros(shape= ten.shape(re),dtype= np.float32)
 
-    ten.abs(x= more,out= more).execute()
+    ten.subtract(x1= b1,x2= 1,out= more2)
 
-    ten.take(a= less,indices= lessTen,out= re).execute()
+    ten.abs(x= more2,out= more2)
 
-    ten.take(a= more,indices= moreTen,out= re).execute()
+    ten.multiply(x1= more,x2= more2,out= more)
 
-    ten.multiply(x1= re,x2= 255,out= re).execute()
+    ten.multiply(x1= more,x2= 2,out= more)
 
+    ten.subtract(x1= more,x2= 1,out= more)
+
+    ten.abs(x= more,out= more)
+
+    ten.take(a= less,indices= lessTen,out= re)
+
+    ten.take(a= more,indices= moreTen,out= re)
+
+    ten.multiply(x1= re,x2= 255,out= re)
 
     return re
 
 
 # Hard Light
-def CHardLight(a :ten.Tensor,b :ten.Tensor):
+def CHardLight(a :ten.ndarray,b :ten.ndarray):
    
   return COverlay(a= b,b =a)
 
 
 # Soft light
-def CSoftLight(a :ten.Tensor,b :ten.Tensor):
+def CSoftLight(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
- 
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
+    ten.true_divide(x1= a,x2= 255,out= a1)
 
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+    
+    ten.true_divide(x1= b,x2= 255,out= b1)
 
-    less = ten.zeros(shape= re.shape,dtype= np.float32,gpu= True)
-    less.execute()
-    lessTen = ten.full(shape= re.shape,fill_value= False,gpu= True)
-    lessTen.execute()
-    ten.less_equal(x1= b1,x2= 0.50,out=lessTen).execute()
-    ten.take(a= b1,indices= lessTen,out= less).execute()
+    less = ten.zeros(shape= ten.shape(re),dtype= np.float32)
+    
+    lessTen = ten.full(shape= ten.shape(re),fill_value= False)
+    
+    ten.less_equal(x1= b1,x2= 0.50,out=lessTen)
+    ten.take(a= b1,indices= lessTen,out= less)
 
-    ten.subtract(x1= a1,x2= 1,out= less).execute()
-    ten.abs(x= less,out=less).execute()
+    ten.subtract(x1= a1,x2= 1,out= less)
+    ten.abs(x= less,out=less)
 
-    ten.multiply(x1= less,x2= a1).execute()
-    ten.multiply(x1= less,x2= b1).exevute()
+    ten.multiply(x1= less,x2= a1)
+    ten.multiply(x1= less,x2= b1)
 
-    ten.multiply(x1= less,x2= 2).execute()
+    ten.multiply(x1= less,x2= 2)
 
-    tem = ten.zeros(shape= a1.shape,dtype= np.float32,gpu=True)
-    tem.execute()
-    ten.square(x= a1,out= tem).execute()
+    tem = ten.zeros(shape= ten.shape(a1),dtype= np.float32)
 
-    ten.add(x1= less,x2= tem, out= less).execute()
+    ten.square(x= a1,out= tem)
 
+    ten.add(x1= less,x2= tem, out= less)
 
-    more = ten.zeros(shape= re.shape,dtype= np.float32,gpu= True)
-    more.execute()
-    moreTen = ten.full(shape= re.shape,fill_value= False,gpu= True)
-    moreTen.execute()
-    ten.greater(x1= b1,x2= 0.50,out= moreTen).execute()
-    ten.take(a= b1,indices= moreTen,out= more).execute()
+    more = ten.zeros(shape= ten.shape(re),dtype= np.float32)
+   
+    moreTen = ten.full(shape= ten.shape(re),fill_value= False)
+   
+    ten.greater(x1= b1,x2= 0.50,out= moreTen)
+   
+    ten.take(a= b1,indices= moreTen,out= more)
 
-    ten.subtract(x1= b1,x2= 1,out= more).execute()
-    ten.abs(x= more, out= more).execute()
+    ten.subtract(x1= b1,x2= 1,out= more)
+    ten.abs(x= more, out= more)
 
-    ten.multiply(x1= more,x2= a1,out=more).execute()
-    ten.multiply(x1= more, x2= 2,out= more).execute()
+    ten.multiply(x1= more,x2= a1,out=more)
+    ten.multiply(x1= more, x2= 2,out= more)
 
-    tem2 = ten.zeros(shape= a1.shape,dtype= np.float32,gpu=True)
-    tem2.execute()
-    ten.multiply(x1= b1,x2=2,out= tem2).execute()
-    ten.subtract(x1= tem,x2= 1,out= tem2).execute()
+    tem2 = ten.zeros(shape=ten.shape(a1),dtype= np.float32)
+ 
+    ten.multiply(x1= b1,x2=2,out= tem2)
+    ten.subtract(x1= tem,x2= 1,out= tem2)
 
-    tem3 = ten.zeros(shape= a1.shape,dtype= np.float32,gpu=True)
-    tem3.execute()
-    ten.sqrt(x= a1,out= tem3).execute()
+    tem3 = ten.zeros(shape= ten.shape(a1),dtype= np.float32)
+  
+    ten.sqrt(x= a1,out= tem3)
 
-    ten.multiply(x1=tem3,x2= tem2,out= tem2).execute()
+    ten.multiply(x1=tem3,x2= tem2,out= tem2)
 
-    ten.add(x1= more,x2= tem2,out= more).execute()
+    ten.add(x1= more,x2= tem2,out= more)
 
+    ten.take(a= less,indices= lessTen,out= re)
 
-    ten.take(a= less,indices= lessTen,out= re).execute()
+    ten.take(a= more,indices= moreTen,out= re)
 
-    ten.take(a= more,indices= moreTen,out= re).execute()
-
-    ten.multiply(x1= re,x2= 255,out= re).execute()
+    ten.multiply(x1= re,x2= 255,out= re)
 
     return re 
 
 # VividLight
-def CVividLight(a :ten.Tensor,b :ten.Tensor):
+def CVividLight(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
- 
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+   
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
+    ten.true_divide(x1= a,x2= 255,out= a1)
 
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+    
+    ten.true_divide(x1= b,x2= 255,out= b1)
 
-    less = ten.zeros(shape= re.shape,dtype= np.float32,gpu= True)
-    less.execute()
-    lessTen = ten.full(shape= re.shape,fill_value= False,gpu= True)
-    lessTen.execute()
-    ten.less_equal(x1= b1,x2= 0.50,out=lessTen).execute()
-    ten.take(a= b1,indices= lessTen,out= less).execute()
+    less = ten.zeros(shape= ten.shape(re),dtype= np.float32)
+   
+    lessTen = ten.full(shape= ten.shape(re),fill_value= False)
+  
+    ten.less_equal(x1= b1,x2= 0.50,out=lessTen)
+    ten.take(a= b1,indices= lessTen,out= less)
 
+    ten.subtract(x1= a1,x2= 1,out=less)
+    tem = ten.zeros(shape= ten.shape(a1),dtype= np.float32)
 
-    ten.subtract(x1= a1,x2= 1,out=less).execute()
-    tem = ten.zeros(shape= a1.shape,dtype= np.float32,gpu=True)
-    tem.execute()
+    ten.multiply(x1= b1,x2= 2,out=tem)
+    ten.true_divide(x1= less,x2= tem,out= less)
 
-    ten.multiply(x1= b1,x2= 2,out=tem).execute()
-    ten.true_divide(x1= less,x2= tem,out= less).execute()
+    ten.add(x1= less,x2= 1,out= less)
 
-    ten.add(x1= less,x2= 1,out= less).execute()
+    more = ten.zeros(shape= ten.shape(re),dtype= np.float32)
 
-    more = ten.zeros(shape= re.shape,dtype= np.float32,gpu= True)
-    more.execute()
-    moreTen = ten.full(shape= re.shape,fill_value= False,gpu= True)
-    moreTen.execute()
-    ten.greater(x1= b1,x2= 0.50,out= moreTen).execute()
-    ten.take(a= b1,indices= moreTen,out= more).execute()
+    moreTen = ten.full(shape= ten.shape(re),fill_value= False)
+   
+    ten.greater(x1= b1,x2= 0.50,out= moreTen)
+    ten.take(a= b1,indices= moreTen,out= more)
 
-    tem2 = ten.zeros(shape= a1.shape,dtype= np.float32,gpu=True)
-    tem2.execute()
-
-    ten.subtract(x1= b1,x2= 1,out= tem2).execute()
-    ten.abs(x= tem2,out= tem2).execute()
+    tem2 = ten.zeros(shape= ten.shape(a1),dtype= np.float32)
+    
+    ten.subtract(x1= b1,x2= 1,out= tem2)
+    ten.abs(x= tem2,out= tem2)
      
-    ten.multiply(x1= tem2,x2= 2,out= tem2).execute()
+    ten.multiply(x1= tem2,x2= 2,out= tem2)
       
-    ten.true_divide(x1= a1,x2= tem2,out= more).execute()
+    ten.true_divide(x1= a1,x2= tem2,out= more)
 
+    ten.take(a= less,indices= lessTen,out= re)
 
-    ten.take(a= less,indices= lessTen,out= re).execute()
+    ten.take(a= more,indices= moreTen,out= re)
 
-    ten.take(a= more,indices= moreTen,out= re).execute()
-
-    ten.multiply(x1= re,x2= 255,out= re).execute()
+    ten.multiply(x1= re,x2= 255,out= re)
 
     return re
 
 # LinearLight
-def CLinearLight(a :ten.Tensor,b :ten.Tensor):
+def CLinearLight(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
- 
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+     
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
-
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
-
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
     
-    ten.multiply(x1= b1,x2= 2,out= re).execute()
+    ten.true_divide(x1= a,x2= 255,out= a1)
 
-    ten.add(x1= re,x2= a1,out= re).execute()
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+    
+    ten.true_divide(x1= b,x2= 255,out= b1)
 
-    ten.subtract(x1= re,x2= 1,out= re).execute()
+    ten.multiply(x1= b1,x2= 2,out= re)
 
-    ten.multiply(x1= re,x2= 255,out= re).execute()
+    ten.add(x1= re,x2= a1,out= re)
+
+    ten.subtract(x1= re,x2= 1,out= re)
+
+    ten.multiply(x1= re,x2= 255,out= re)
 
     return re
 
 
 
 # Pin Light
-def CPinLight(a :ten.Tensor,b :ten.Tensor):
+def CPinLight(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
  
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
-
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
-
-    less = ten.zeros(shape= re.shape,dtype= np.float32,gpu= True)
-    less.execute()
-    lessTen = ten.full(shape= re.shape,fill_value= False,gpu= True)
-    lessTen.execute()
-    ten.less_equal(x1= b1,x2= 0.50,out=lessTen).execute()
-    ten.take(a= b1,indices= lessTen,out= less).execute()
-
-    ten.multiply(x1= b1,x2= 2,out= less).execute()
-
-    ten.less_equal(x1= a1,x2= less,out= lessTen).execute()
-
-    ten.take(a= a1,indices= lessTen,out= less).execute()
-   
-
-    more = ten.zeros(shape= re.shape,dtype= np.float32,gpu= True)
-    more.execute()
-    moreTen = ten.full(shape= re.shape,fill_value= False,gpu= True)
-    moreTen.execute()
-    ten.greater(x1= b1,x2= 0.50,out= moreTen).execute()
-    ten.take(a= b1,indices= moreTen,out= more).execute()
-
-    ten.subtract(x1= b1,x2= 0.50,out= more).execute()
-    ten.multiply(x1= more,x2= 2,out= more).execute()
-
-    ten.greater_equal(x1= a1,x2= more,out=moreTen).execute()
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
     
-    ten.take(a= a1,indices= moreTen,out= more).execute()
+    ten.true_divide(x1= a,x2= 255,out= a1)
+
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+    
+    ten.true_divide(x1= b,x2= 255,out= b1)
+
+    less = ten.zeros(shape= ten.shape(re),dtype= np.float32)
+    
+    lessTen = ten.full(shape= ten.shape(re),fill_value= False)
+    
+    ten.less_equal(x1= b1,x2= 0.50,out=lessTen)
+    ten.take(a= b1,indices= lessTen,out= less)
+
+    ten.multiply(x1= b1,x2= 2,out= less)
+
+    ten.less_equal(x1= a1,x2= less,out= lessTen)
+
+    ten.take(a= a1,indices= lessTen,out= less)
+   
+    more = ten.zeros(shape= ten.shape(re),dtype= np.float32)
+   
+    moreTen = ten.full(shape= ten.shape(re),fill_value= False)
+   
+    ten.greater(x1= b1,x2= 0.50,out= moreTen)
+    ten.take(a= b1,indices= moreTen,out= more)
+
+    ten.subtract(x1= b1,x2= 0.50,out= more)
+    ten.multiply(x1= more,x2= 2,out= more)
+
+    ten.greater_equal(x1= a1,x2= more,out=moreTen)
+    
+    ten.take(a= a1,indices= moreTen,out= more)
 
 
-    ten.take(a= less,indices= lessTen,out= re).execute()
+    ten.take(a= less,indices= lessTen,out= re)
 
-    ten.take(a= more,indices= moreTen,out= re).execute()
+    ten.take(a= more,indices= moreTen,out= re)
 
-    ten.multiply(x1= re,x2= 255,out= re).execute()
+    ten.multiply(x1= re,x2= 255,out= re)
 
     return re
 
 # HardMix
-def CHardMix(a :ten.Tensor,b :ten.Tensor):
+def CHardMix(a :ten.ndarray,b :ten.ndarray):
     
-    re = ten.full(shape= a.shape,fill_value= 1.0,dtype= np.float32,gpu= True)
-    re.execute()  
- 
+    re = ten.full(shape= ten.shape(a),fill_value= 1.0,dtype= np.float32)
+    
     # (0 - 255) -> (0,1)
-    a1 = ten.zeros(shape= a.shape,dtype= np.float32,gpu=True)
-    a1.execute()
-    ten.true_divide(x1= a,x2= 255,out= a1).execute() 
+    a1 = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
+    ten.true_divide(x1= a,x2= 255,out= a1)
 
-    b1 = ten.zeros(shape= b.shape,dtype= np.float32,gpu=True)
-    b1.execute()
-    ten.true_divide(x1= b,x2= 255,out= b1).execute()
+    b1 = ten.zeros(shape= ten.shape(b),dtype= np.float32)
+    
+    ten.true_divide(x1= b,x2= 255,out= b1)
 
-    tem = ten.zeros(shape= a1.shape,dtype= np.float32,gpu=True)
-    tem.execute()
-    tem2 = ten.full(shape= a.shape,fill_value= False,gpu= True)
-    tem2.execute()
+    tem = ten.zeros(shape= ten.shape(a1),dtype= np.float32)
+    
+    tem2 = ten.full(shape= ten.shape(a),fill_value= False)
+   
+    ten.add(x1= a1,x2= b1,out= tem)
 
-    ten.add(x1= a1,x2= b1,out= tem).execute()
+    ten.less(x1= tem,x2= 1,out= tem2)
 
-    ten.less(x1= tem,x2= 1,out= tem2).execute()
+    ten.take(a= tem,indices= tem2,out= re)
 
-    ten.take(a= tem,indices= tem2,out= re).execute()
-
-
-    ten.multiply(x1= re,x2= 255,out= re).execute()
+    ten.multiply(x1= re,x2= 255,out= re)
 
     return re
 
 
 # Difference
-def CDifference(a :ten.Tensor,b :ten.Tensor):
+def CDifference(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32) 
     
-    ten.subtract(x1= a,x2= b,out= re).execute()
+    ten.subtract(x1= a,x2= b,out= re)
 
-    ten.abs(x= re,out= re).execute()
+    ten.abs(x= re,out= re)
 
     return re
 
 
 # Exclusion
-def CExclusion(a :ten.Tensor,b :ten.Tensor):
+def CExclusion(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
+    ten.multiply(x1= a,x2= b,out= re)
+    ten.multiply(x1= re,x2= -2,out= re)
 
-    ten.multiply(x1= a,x2= b,out= re).execute()
-    ten.multiply(x1= re,x2= -2,out= re).execute()
-
-    ten.add(x1= re,x2= a,out= re).execute()
-    ten.add(x1= re,x2= b,out= re).execute()
+    ten.add(x1= re,x2= a,out= re)
+    ten.add(x1= re,x2= b,out= re)
 
     return re
 
 
 # Subtract
-def CSubtract(a :ten.Tensor,b :ten.Tensor):
+def CSubtract(a :ten.ndarray,b :ten.ndarray):
    
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
- 
-    ten.subtract(x1= a,x2= b,out= re).execute()
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
+    
+    ten.subtract(x1= a,x2= b,out= re)
 
     return re 
 
 
 # Divide
-def CDivide(a :ten.Tensor,b :ten.Tensor):
+def CDivide(a :ten.ndarray,b :ten.ndarray):
 
-    re = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    re.execute()  
+    re = ten.zeros(shape= ten.shape(a),dtype= np.float32)
 
-    ten.true_divide(x1= a,x2= b,out= re).execute()
+    ten.true_divide(x1= a,x2= b,out= re)
 
     return re
 
 
-def CAlphaBlend(a :ten.Tensor,b : ten.Tensor,a_revese :bool = False,b_revese : bool= False,isUseAlpha_a : bool = False,isUseAlpha_b :bool = False) -> tuple[ten.Tensor,ten.Tensor]:
+def CAlphaBlend(a :ten.ndarray,b : ten.ndarray,a_revese :bool = False,b_revese : bool= False,isUseAlpha_a : bool = False,isUseAlpha_b :bool = False) -> tuple[ten.ndarray,ten.ndarray]:
      ''' alpha blend return (m,n,3) shape ,differect from other blend func,they don't remove alpha chneel'''
-     re_a = a.copy()
-     re_b = b.copy()     
+     re_a = ten.copy(a)
+     re_b = ten.copy(b)    
+
+     shape_a = ten.shape(re_a)
+     shape_b = ten.shape(re_b)
 
      a_arr = ten.hsplit(re_a,[3,1])
-     a_arr.execute()
      
-     tem_a = ten.full(shape= (a.shape[0],a.shape[1],3),fill_value= 0.0,dtype= np.float32,gpu= True)
-     tem_a.execute()
-     
+     tem_a = ten.full(shape= (shape_a[0],shape_a[1],3),fill_value= 0.0,dtype= np.float32)
+    
      b_arr = ten.hsplit(re_b,[3,1])
-     b_arr.execute()
-
-     tem_b = ten.full(shape= (b.shape[0],b.shape[1],3),fill_value= 0.0,dtype= np.float32,gpu= True)
-     tem_b.execute()
-
+    
+     tem_b = ten.full(shape= (shape_b[0],shape_b[1],3),fill_value= 0.0,dtype= np.float32)
+    
      if isUseAlpha_a:
         
         aalphaTen = ten.tile(a_arr[1],(1,1,3)) 
-        aalphaTen.execute()
+        aalphaTen
 
         if a_revese:
-           arevese = ten.full(shape= (a.shape[0],a.shape[1],3),fill_value= 255.0,dtype= np.float32,gpu= True)
-           ten.subtract(x1= arevese,x2= aalphaTen,out= aalphaTen).execute()
+           arevese = ten.full(shape= (shape_a[0],shape_a[1],3),fill_value= 255.0,dtype= np.float32)
+           ten.subtract(x1= arevese,x2= aalphaTen,out= aalphaTen)
 
 
-        ten.multiply(x1= a_arr[0],x2= aalphaTen,out= tem_a).execute()
+        ten.multiply(x1= a_arr[0],x2= aalphaTen,out= tem_a)
         
      else:
 
-        ten.multiply(x1= a_arr[0],x2= 1,out= tem_a).execute() 
+        ten.multiply(x1= a_arr[0],x2= 1,out= tem_a)
        
      if isUseAlpha_b:   
         
         balphaTen = ten.tile(b_arr[1],(1,1,3)) 
-        balphaTen.execute()
+        balphaTen
 
         if b_revese:
-           brevese = ten.full(shape= (b.shape[0],b.shape[1],3),fill_value= 255.0,dtype= np.float32,gpu= True)
-           ten.subtract(x1= brevese,x2= balphaTen,out= balphaTen).execute()
+           brevese = ten.full(shape= (shape_b[0],shape_b[1],3),fill_value= 255.0,dtype= np.float32)
+           ten.subtract(x1= brevese,x2= balphaTen,out= balphaTen)
 
         
-        ten.multiply(x1= a_arr[0],x2= balphaTen,out= tem_b).execute()
+        ten.multiply(x1= a_arr[0],x2= balphaTen,out= tem_b)
         
      else:
 
-        ten.multiply(x1= b_arr[0],x2= 1,out= tem_a).execute() 
+        ten.multiply(x1= b_arr[0],x2= 1,out= tem_a)
            
 
      return (tem_a,tem_b)   
@@ -720,7 +686,7 @@ mixmodeFuncs = {
 
 
 
-def Null(a : ten.Tensor):
+def Null(a : ten.ndarray):
 
     return a
 
@@ -754,32 +720,29 @@ def boxesForGauss(sigma, n):  # standard deviation, number of boxes
 
 
 # Gaussian
-def CGaussian(a : ten.Tensor,r :np.float32):
+def CGaussian(a : ten.ndarray,r :np.float32):
 
+    s_a = ten.shape(a)
 
-    maskBool = ten.full(shape= a.shape,fill_value= False,gpu= True)
-    maskBool.execute()
+    maskBool = ten.full(shape= ten.shape(a),fill_value= False)
+   
+    maskValue = ten.full(shape= ten.shape(a),fill_value= -1.0,dtype= np.float32) 
+   
+    ten.equal(x1= a,x2= -1.0,out= maskBool)
 
-    maskValue = ten.full(shape= a.shape,fill_value= -1.0,dtype= np.float32,gpu= True) 
-    maskValue.execute()
+    channels : list[ten.ndarray] = ten.dsplit(a= a,indices_or_sections= 3)
 
-    ten.equal(x1= a,x2= -1.0,out= maskBool).execute()
-
-
-    channels : list[ten.Tensor] = ten.dsplit(a= a,indices_or_sections= 3)
-    channels.execute()
-
-    ndarrs = list(channel.to_numpy() for channel in channels)
+    ndarrs = list(ten.asnumpy(channel) for channel in channels)
 
     ndarrs = np.array(object= ndarrs,dtype= np.float32)
 
-    ndarrs = ndarrs.reshape(shape=(3,1,a.shape[0],a.shape[1]))
+    ndarrs = ndarrs.reshape(shape=(3,1,s_a[0],s_a[1]))
 
-    field :ti.MatrixField = ti.Matrix.field(n = a.shape[1],m= a.shape[0],dtype=np.float32,shape= (3,1))
+    field :ti.MatrixField = ti.Matrix.field(n = s_a[1],m= s_a[0],dtype=np.float32,shape= (3,1))
    
     field.from_numpy(ndarrs)
 
-    targetField : ti.MatrixField = ti.Matrix.field(n = a.shape[1],m= a.shape[0],dtype=np.float32,shape= (3,1))
+    targetField : ti.MatrixField = ti.Matrix.field(n = s_a[1],m= s_a[0],dtype=np.float32,shape= (3,1))
 
     
     # Due to the use of GPU ,it will be arithmetic 4 times
@@ -897,10 +860,9 @@ def CGaussian(a : ten.Tensor,r :np.float32):
           blursH(m= field.m,n= field.n,r = r,iarr= 1 / (r+r+1),ch = ch[0]) 
           blursW(m= field.m,n= field.n,r = r,iarr= 1 / (r+r+1),ch = ch[0])  
 
-    re = ten.tensor(data= targetField.to_numpy().reshape(a.shape),gpu= True)
-    re.execute()
+    re = ten.asarray(data= targetField.to_numpy().reshape(ten.shape(a)),dtype= np.float32)
 
-    ten.take(a= maskValue, indices= maskBool,out=re).execute()
+    ten.take(a= maskValue, indices= maskBool,out=re)
 
     return re 
 
@@ -911,22 +873,19 @@ def CGaussian(a : ten.Tensor,r :np.float32):
 # The copyright is owned by the blogger and I localize it by taichi 
 
 # Box
-def CBoxBlur(a : ten.Tensor,xblur : np.uint16,yblur : np.uint16):
+def CBoxBlur(a : ten.ndarray,xblur : np.uint16,yblur : np.uint16):
 
-    shape = a.shape
+    shape = ten.shape(a)
 
-    maskBool = ten.full(shape= shape,fill_value= False,gpu= True)
-    maskBool.execute()
+    maskBool = ten.full(shape= shape,fill_value= False)
 
-    maskValue = ten.full(shape= shape,fill_value= -1.0,dtype= np.float32,gpu= True) 
-    maskValue.execute()
+    maskValue = ten.full(shape= shape,fill_value= -1.0,dtype= np.float32) 
 
-    ten.equal(x1= a,x2= -1.0,out= maskBool).execute()
+    ten.equal(x1= a,x2= -1.0,out= maskBool)
 
     channels = ten.dsplit(a= a,indices_or_sections= 3)
-    channels.execute()
 
-    ndarrs = list(channel.to_numpy() for channel in channels)
+    ndarrs = list(ten.asnumpy(channel) for channel in channels)
 
     ndarrs = np.array(object= ndarrs,dtype= np.float32)
 
@@ -936,7 +895,7 @@ def CBoxBlur(a : ten.Tensor,xblur : np.uint16,yblur : np.uint16):
    
     field.from_numpy(ndarrs)
 
-    targetField : ti.MatrixField = ti.Matrix.field(n = a.shape[1],m= a.shape[0],dtype=np.float32,shape= (3,1))
+    targetField : ti.MatrixField = ti.Matrix.field(n = shape[1],m= shape[0],dtype=np.float32,shape= (3,1))
 
     @ti.kernel
     def copy():
@@ -994,10 +953,9 @@ def CBoxBlur(a : ten.Tensor,xblur : np.uint16,yblur : np.uint16):
        blurHorizontal(f= f,half= halfx,weight= weightx,ch = ch)
        blurVertical(f= f,half= halfy,weight= weighty,ch= ch)
 
-    re = ten.tensor(data= targetField.to_numpy().reshape(a.shape),gpu= True)
-    re.execute()
+    re = ten.ndarray(data= targetField.to_numpy().reshape(ten.shape(a)))
  
-    ten.take(a= maskValue, indices= maskBool,out=re).execute()
+    ten.take(a= maskValue, indices= maskBool,out=re)
 
     return re
 
@@ -1005,7 +963,7 @@ def CBoxBlur(a : ten.Tensor,xblur : np.uint16,yblur : np.uint16):
 
 # UNFINISHED #  
 #Kawase
-def CKawase(a : ten.Tensor):
+def CKawase(a : ten.ndarray):
 
 
 
@@ -1019,7 +977,7 @@ def CKawase(a : ten.Tensor):
 
 # UNFINISHED #  
 # Dual
-def CDual(a : ten.Tensor,blur_radius=None):
+def CDual(a : ten.ndarray,blur_radius= None):
 
    
     
@@ -1049,40 +1007,38 @@ blurModes = {
 
 
 # Strock Base
-def CStrockBase(a : ten.Tensor,strockweith : int,color : mathutils.Vector):
+def CStrockBase(a : ten.ndarray,strockweith : int,color : mathutils.Vector):
 
-    maskBool = ten.full(shape= a.shape,fill_value= False,gpu= True)
-    maskBool.execute()
+    s_a = ten.shape(a)
 
-    maskValue = ten.full(shape= a.shape,fill_value= -1.0,dtype= np.float32,gpu= True) 
-    maskValue.execute()
+    maskBool = ten.full(shape= ten.shape(a),fill_value= False)
+   
+    maskValue = ten.full(shape= ten.shape(a),fill_value= -1.0,dtype= np.float32) 
+   
+    ten.equal(x1= a,x2= -1.0,out= maskBool)
 
-    ten.equal(x1= a,x2= -1.0,out= maskBool).execute()
+    backTen : ten.ndarray = ten.zeros(shape= ten.shape(a),dtype= np.float32)
 
-    backTen : ten.Tensor = ten.zeros(shape= a.shape,dtype= np.float32,gpu= True)
-    backTen.execute()
-
-    backIndices = ten.full(shape= a.shape,fill_value= False,gpu= True)
-    backIndices.execute()
+    backIndices = ten.full(shape= ten.shape(a),fill_value= False)
   
-    ten.equal(x1 = a,x2= -1.0,out= backIndices).execute()
+    ten.equal(x1 = a,x2= -1.0,out= backIndices)
     # -1 is mask value 
-    ten.take(a= a, indices= backIndices,out= backTen).execute()
+    ten.take(a= a, indices= backIndices,out= backTen)
 
     strockKernel = ti.Vector(arr= [[1,1],
                                    [1,1]],
                              dt= np.float32
                              )
 
-    backNdarr : np.ndarray = backTen.to_numpy()
+    backNdarr : np.ndarray = ten.asnumpy(backTen)
 
-    backNdarr = backNdarr.reshape(shape= (a.shape[0],a.shape[1],1,3))
+    backNdarr = backNdarr.reshape(shape= (s_a[0],s_a[1],1,3))
 
-    tiBack : ti.MatrixField = ti.Matrix.field(n= 1,m= 3,shape= (a.shape[0],a.shape[1]),dtype= np.float32)
+    tiBack : ti.MatrixField = ti.Matrix.field(n= 1,m= 3,shape= (s_a[0],s_a[1]),dtype= np.float32)
 
     tiBack.from_numpy(backNdarr)
  
-    timap : ti.MatrixField = ti.Matrix.field(n= 5,m= 2,shape= (a.shape[0] - 1,a.shape[1] - 1),dtype= np.float32)
+    timap : ti.MatrixField = ti.Matrix.field(n= 5,m= 2,shape= (s_a[0] - 1,s_a[1] - 1),dtype= np.float32)
     # [[mapVlaue,        0],
     #  [[0,0][0], [0,0][1]],
     #  [[0,1][0], [0,1][1]],
@@ -1227,42 +1183,37 @@ def CStrockBase(a : ten.Tensor,strockweith : int,color : mathutils.Vector):
 
     renumpy = tiBack.to_numpy()
     
-    oneTen = ten.tensor(data= renumpy,dtype= np.float32,gpu=True)
-    oneTen.execute()
+    oneTen = ten.asarray(data= renumpy,dtype= np.float32)
     
-    drawBools = ten.full(shape= a.shape,fill_value= False,gpu= True)
-    drawBools.execute()
+    drawBools = ten.full(shape= s_a,fill_value= False)
 
-    ten.equal(x1= oneTen,x2= -1,out= drawBools).execute()
+    ten.equal(x1= oneTen,x2= -1,out= drawBools)
 
-    zeros = ten.full(shape= a.shape,fill_value= 0,gpu= True)
+    zeros = ten.full(shape= s_a,fill_value= 0)
 
-    ten.take(a= zeros,indices= drawBools,out= oneTen).execute()
+    ten.take(a= zeros,indices= drawBools,out= oneTen)
 
-    drawBools = ten.full(shape= a.shape,fill_value= False,gpu= True)
-    drawBools.execute()
+    drawBools = ten.full(shape= s_a,fill_value= False)
 
-    re = ten.tensor(data= a.to_numpy(),dtype= np.float32,gpu=True)
-    re.execute()
+    re = ten.copy(a)
 
-    ten.equal(x1= oneTen,x2= 1,out= drawBools).execute()
+    ten.equal(x1= oneTen,x2= 1,out= drawBools)
 
     xyz = color.xyz
 
-    ten.multiply(x1= oneTen,x2= [[[xyz[0],xyz[1],xyz[2]]]],out= oneTen).execute()
+    ten.multiply(x1= oneTen,x2= [[[xyz[0],xyz[1],xyz[2]]]],out= oneTen)
 
-    ten.take(a= oneTen,indices= drawBools,out= re).execute()
+    ten.take(a= oneTen,indices= drawBools,out= re)
 
     re = CGaussian(re,strockweith / 2)
-    maskImg = re.to_numpy()
+    maskImg = ten.asnumpy(re)
 
     from skimage.filters import _unsharp_mask as mask
     maskImg = mask.unsharp_mask(image =maskImg)
 
-    re = ten.tensor(data= maskImg,dtype= np.float32,gpu=True)
-    re.execute()
+    re = ten.asarray(a= maskImg,dtype= np.float32)
 
-    ten.take(a= maskValue, indices= maskBool,out=re).execute()
+    ten.take(a= maskValue, indices= maskBool,out=re)
 
     return re
 
@@ -1279,14 +1230,15 @@ storks = {
 
 
 #imageScaling 
-def CImageScaling(a : ten.Tensor,new_width :int,new_height : int ):
+def CImageScaling(a : ten.ndarray,new_width :int,new_height : int):
 
-    src = ti.Vector(data= a.to_numpy(),dtype= np.float32)
+    src : ti.Matrix = ti.Vector(data= ten.asnumpy(a= a),dtype= np.float32)
 
+    shape = ten.shape(a)
     
-    src_rows = a.shape[0]
-    src_cols = a.shape[1]
-    deep = a.shape[2]
+    src_rows = shape[0]
+    src_cols = shape[1]
+    deep = shape[2]
 
     x = 1.0 / (1.0* src_rows / new_width)
     y = 1.0 / (1.0* src_cols/ new_height)
@@ -1343,8 +1295,8 @@ def CImageScaling(a : ten.Tensor,new_width :int,new_height : int ):
     bilinera()        
 	
     redata = dst.to_numpy()
-    re = ten.tensor(data= redata,dtype= np.float32,gpu= True)
-    re.execute()
+    re = ten.array(data= redata,dtype= np.float32)
+
 
     return re
 
@@ -1356,21 +1308,3 @@ all_effect_funcs = blurModes | storks    # | ....
 
 #-------------------------------------------------------------#
 
-
-
-
-
-
-## -------------------------------------------------------
-
-##         AMD          ##
-
-
-
-
-
-
-
-
-
-##----------------------------------------------------------

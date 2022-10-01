@@ -6,7 +6,7 @@ import mathutils
 
 
 
-from mars import tensor as ten 
+import cupy as ten 
 
 import numpy as np
 from bpy.types import Context
@@ -14,10 +14,10 @@ from bpy.types import Context
 ## this file not have UVMapping Base Operator ,only have Calculation operators
 ## base operator in UV_operators.UVTexture_OT_ObjectUVMapping ...
 
-gl_back_data : ten.Tensor = None
+gl_back_data : ten.ndarray = None
 '''gl_back_data only valid in one operation'''
 
-gl_mesh_data : ten.Tensor = None
+gl_mesh_data : ten.ndarray = None
 '''gl_mesh_data only valid in one operation'''
 
 resultDatas : np.ndarray = None 
@@ -62,15 +62,10 @@ def updateDatas(context : Context,uvMappingObjectName : str,backGroundObjName :s
       backarr = np.array(object= backVerts,dtype= np.float32).reshape(shape=(backcount,3))
       # ndarray shape (backcount,3)
 
-    
-      gl_back_data = ten.tensor(data= objarr,gpu= True)
-      gl_back_data.execute()
+      gl_back_data = ten.asarray(a= objarr,dtype= np.float32)
 
-    
-      gl_mesh_data = ten.tensor(data= backarr,gpu= True)
-      gl_mesh_data.execute()
-
-
+      gl_mesh_data = ten.asarray(a= backarr,dtype= np.float32)
+     
       backMesh.free()
       mesh.free()
        
@@ -109,13 +104,12 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
           datanpArr : np.ndarray = None
 
           ##    CUDA    ## 
-          if gpuEnv.NVorAmd:
-
-                # mars use cuda in gpu
+          if gpuEnv.NVAmdorOther:
 
                 global gl_mesh_data
                 global gl_back_data
-                shapem = list(gl_back_data.shape)
+
+                shapem = list(ten.shape(gl_back_data))
                 
                 m :int = shapem[0]
 
@@ -124,15 +118,11 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
                 gl_mesh_data = ten.swapaxes(gl_mesh_data,axis1=0,axis2=1) 
                 gl_mesh_data = ten.ravel(gl_mesh_data)
                 gl_mesh_data = ten.tile(gl_mesh_data,(1,m))
-                
-                gl_mesh_data.execute()
 
-                shapen = list(gl_mesh_data.shape)
+                shapen = list(ten.shape(gl_mesh_data))
 
                 gl_back_data = ten.swapaxes(gl_back_data,axis1=0,axis2=1) 
                 gl_back_data = ten.tile(gl_back_data,(n,1))
-
-                gl_back_data.execute()
 
                 '''
                 gl_mesh_data as gm
@@ -149,66 +139,59 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
                 
                 
                 '''
-                subten : ten.Tensor = ten.zeros(shape=(3* n,m),dtype= np.float32,gpu=True)
+                subten : ten.ndarray = ten.zeros(shape=(3* n,m),dtype= np.float32)
                 ten.subtract(x1= gl_back_data,x2= gl_mesh_data,out=subten)
 
-                subten.execute()
                 # sub ten is subtract(gl_back_data,gl_mesh_data)
                   
-                xlist :list[ten.Tensor] = ten.hsplit(a=subten,indices_or_sections= 3)   
+                xlist :list[ten.ndarray] = ten.hsplit(a=subten,indices_or_sections= 3)   
                 
-                newTen : ten.Tensor = ten.empty(shape=(1,3),dtype=np.float32,gpu=True)
+                newTen : ten.ndarray = ten.empty(shape=(1,3),dtype=np.float32)
 
                 for xten in xlist:
                   # xTen shape = (3,m)
                   
                   ten.exp2(x= xten,out= xten)
-                  xten.execute()
-                  disTen : ten.Tensor = ten.zeros(shape=(1,m),dtype=np.float32,gpu=True) 
+                
+                  disTen : ten.ndarray = ten.zeros(shape=(1,m),dtype=np.float32) 
                   ten.sum(a= xten,axis=0,dtype=np.float32,out=disTen)
-                  disTen.execute()
-
-                  arr : np.ndarray = np.argsort(a= disTen.to_numpy(),axis=1,kind= 'mergesort')
-                  indList : ten.Tensor = ten.tensor(data= arr,dtype= np.float32,gpu= True)
+                
+                  arr : np.ndarray = np.argsort(a= ten.asnumpy(disTen),axis=1,kind= 'mergesort')
+                  indList : ten.ndarray = ten.asarray(data= arr,dtype= np.float32)
                   # (1,m)
-                  indList.execute()
                   
-                  temten : list[ten.Tensor] = ten.vsplit(a= indList,indices_or_sections= ten.array([3,m -3]))     
+                  temten : list[ten.ndarray] = ten.vsplit(a= indList,indices_or_sections= ten.array([3,m -3]))     
                   
                   newTen = ten.hstack((newTen,temten[0]))
 
-                  newTen.execute()
-
                 #newTen shape = (n,3)
                 
-                newt :ten.Tensor = ten.empty(shape= (3,3),dtype=np.float32,gpu=True)
+                newt :ten.ndarray = ten.empty(shape= (3,3),dtype=np.float32)
 
-                elements : list[ten.Tensor] = ten.hsplit(a=newTen,indices_or_sections= 1)
+                elements : list[ten.ndarray] = ten.hsplit(a=newTen,indices_or_sections= 1)
                 for el in elements: 
                   newElement = ten.tile(A= el,reps=3)
                   ten.hstack((newt,newElement))
-                  newt.execute()
                   # newt (3n,3)
 
-                endData : ten.Tensor = ten.take(a= gl_back_data,indices=newt)
-                endData.execute()
+                endData : ten.ndarray = ten.take(a= gl_back_data,indices=newt)
+        
                 # (3n,3) closest three point in back points
 
-                mapdata : ten.Tensor = ten.zeros(shape= (3*n,1),dtype=np.float32,gpu=True)
+                mapdata : ten.ndarray = ten.zeros(shape= (3*n,1),dtype=np.float32)
 
                 ten.take(a= gl_mesh_data,indices= 0 ,axis=1,out= mapdata)
 
-                mapdata.execute() 
                 #(3n,1) mesh point
 
-                dataTen :ten.Tensor = ten.vstack((mapdata,endData))
-                dataTen.execute()
+                dataTen :ten.ndarray = ten.vstack((mapdata,endData))
+
                 # [
                 #   0 : mapdata (mesh)
                 #   1 - 3 : endData (back)
                 # ]
                 
-                datanpArr = np.ascontiguousarray(a= dataTen.to_numpy(),dtype=np.float32)
+                datanpArr = np.ascontiguousarray(a= ten.asnumpy(dataTen),dtype=np.float32)
                 # (3n,4)
 
           ## ---------------
@@ -220,9 +203,6 @@ class UVTExture_OT_UvMappingCalculateProjectionValue(bpy.types.Operator):
 
 
           ## ---------------   
-
-
-        
 
           import taichi as ti
           from .import base  

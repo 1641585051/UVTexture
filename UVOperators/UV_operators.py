@@ -1,7 +1,6 @@
 
 import inspect
 import os
-from this import d
 from typing import Any
 
 import bpy
@@ -13,7 +12,7 @@ import operator
 
 import numpy as np
 import cv2
-import mars.tensor as ten
+import cupy as ten
 
 
 from ..dataDefine import DataProperty,ControlAlgorithms,UVListLayer
@@ -99,7 +98,7 @@ class UVTexture_OT_Image_Stack_Compute(bpy.types.Operator):
              
              imagestackStruct = None
 
-             if gpuEnv.NVorAmd:
+             if gpuEnv.NVAmdorOther:
                  
                   imagestackStruct : gpu_photo_stack.gpuImageStack = UV_UI_Operators.getImageStackDict()[scene.layer_choose_index]
                 
@@ -496,15 +495,14 @@ def SynthesizeFinalResult(image_size : int,uvlistsettings):
         
       re = None 
 
-      if gpuEnv.NVorAmd:
+      if gpuEnv.NVAmdorOther:
 
          root = objNameList[0] 
          rootInd = copyObjs.index(root)
          rootDict : gpu_photo_stack.gpuImageStack = trueDict
          rootData = rootDict.outputImageData()
 
-         re : ten.Tensor = ten.tensor(data= rootData.to_numpy(),shape= rootData.shape,dtype= np.float32,gpu= True)
-         re.execute()
+         re : ten.ndarray = ten.copy(a= rootData)
 
          rootisuseAlpha = scene.uv_texture_settings[rootInd].isUseAlphaTexture
          rootisReverse = getattr(scene,'isReverseAlpha_' + str(rootInd))          
@@ -531,17 +529,16 @@ def SynthesizeFinalResult(image_size : int,uvlistsettings):
                mixfunc = ControlAlgorithms.mixmodeFuncs[mode] 
                # because of alphaBlend no in CollectionProperty 
                # so prameters (a :ten.Tensor,b :ten.Tensor -> Any(tensor) )
-               blendten :ten.Tensor = mixfunc(temTens[0],temTens[1])
+               blendten :ten.ndarray = mixfunc(temTens[0],temTens[1])
                  
-               difficultTen = ten.full(shape= subData.shape,fill_value= False,gpu= True)
-               difficultTen.execute()
+               difficultTen = ten.full(shape= ten.shape(subData),fill_value= False)
                   
-               ten.equal(x1= subData,x2= 0.0,out= difficultTen).execute()
+               ten.equal(x1= subData,x2= 0.0,out= difficultTen)
                   
                # The zero of the mask is reversed to get the non-masked region
-               ten.logical_not(x= difficultTen,out= difficultTen).execute() 
+               ten.logical_not(x= difficultTen,out= difficultTen) 
                    
-               ten.take(a= blendten,indices= difficultTen,out= re).execute() 
+               ten.take(a= blendten,indices= difficultTen,out= re) 
 
 
       else:
@@ -640,9 +637,9 @@ def SynthesizeFinalResult(image_size : int,uvlistsettings):
 
    re = None 
 
-   if gpuEnv.NVorAmd:
+   if gpuEnv.NVAmdorOther:
 
-      images : dict[str,ten.Tensor] = list()
+      images : dict[str,ten.ndarray] = list()
 
       for el in bakeObjs:
 
@@ -693,18 +690,17 @@ def SynthesizeFinalResult(image_size : int,uvlistsettings):
           temObjs[overstart] = temDistanceDict[trueEl]
           overstart += 1
 
-      def makeImage(image :ten.Tensor,coverImage: ten.Tensor):
+      def makeImage(image :ten.ndarray,coverImage: ten.ndarray):
            
-          mask = ten.full(shape= coverImage.shape,fill_value= False,gpu= True)
-          mask.execute()
+          mask = ten.full(shape= ten.shape(coverImage),fill_value= False)
           
-          ten.equal(x1= coverImage,x2= 0.0,out= mask).execute() 
-          ten.logical_not(x= mask,out= mask).execute()
+          ten.equal(x1= coverImage,x2= 0.0,out= mask) 
+          ten.logical_not(x= mask,out= mask)
 
-          ten.take(a= coverImage,indices= mask,out= image).execute()  
+          ten.take(a= coverImage,indices= mask,out= image)  
 
-      re = ten.full(shape= (image_size,image_size,3),fill_value= 1.0,dtype= np.float32,gpu=True)
-      re.execute() # use while backGround
+      re = ten.full(shape= (image_size,image_size,3),fill_value= 1.0,dtype= np.float32)
+       # use while backGround
       
       baseImage = images[objs[0]] 
       makeImage(re,baseImage)
@@ -751,7 +747,7 @@ class UVTexture_OT_RunUVTextureOperator(bpy.types.Operator):
   
       re = SynthesizeFinalResult(size,uvlistsettings)
 
-      npImage : np.ndarray = re.to_numpy()
+      npImage : np.ndarray = ten.asnumpy(re)
    
       path = config.outputImageFilePath
       

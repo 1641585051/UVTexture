@@ -1,41 +1,38 @@
 
-from inspect import getfullargspec
-from re import I
-from this import d
+
 from typing import Any
 
 import os 
 import bpy
 
-from mars import tensor as ten
+import cupy as ten
+
 
 import numpy as np
 
 from ...dataDefine import ControlAlgorithms
 
-##  CUDA  ##
-def returnConditionInZ(self,stackElementCount : int, shape : list[int],condition,step : int = 1,start : int = 0):
+def returnConditionInZ(stackElementCount : int, shape : list[int],condition,step : int = 1,start : int = 0):
            
-      array = np.empty(shape=(shape[0],shape[1],1),dtype= bool)
-      array.fill(False)
-           
+      array : ten.ndarray = ten.full(shape=(shape[0],shape[1],1),fill_value= False,dtype= bool)
+                 
       for i in range(start, (4 * stackElementCount),step):
 
-         tem = np.empty(shape=(shape[0],shape[1],1),dtype= bool)
-                 
+         tem : ten.ndarray = None
+
          if condition(i,stackElementCount):
                
-            tem.fill(True)
+            tem = ten.full(shape=(shape[0],shape[1],1),fill_value= True,dtype= bool)
 
          else:
 
-            tem.fill(False)
+            tem = ten.full(shape=(shape[0],shape[1],1),fill_value= True,dtype= bool)
 
             array = ten.concatenate((array,tem),axis=2)
 
-         array = np.delete(arr= array,obj= 0,axis=2) 
+         array = ten.delete(arr= array,obj= 0,axis=2) 
 
-         return array.tolist()   
+         return array
 
 
 
@@ -44,7 +41,7 @@ class gpuImageDef:
     width: int = 1024
     height: int = 1024 
 
-    gpuImage : ten.Tensor = None
+    gpuImage : ten.ndarray = None
 
     
     def __init__(self,image_width: int,image_height: int,is64Bit: bool = False) -> None:
@@ -63,14 +60,11 @@ class gpuImageDef:
        b = np.zeros(shape=(image_width,image_height),dtype= type_)
        a = np.zeros(shape=(image_width,image_height),dtype= type_)
      
-       self.gpuImage = ten.tensor(data=np.array([r,g,b,a]),gpu=True)
-       
-       self.gpuImage.execute()
-       
+       self.gpuImage = ten.array(data=np.array([r,g,b,a]))
        
        
 
-    def updateData(self,stack: ten.Tensor,stackElementCount: int):
+    def updateData(self,stack: np.ndarray,stackElementCount: int):
       
        shape = stack.shape   
 
@@ -78,7 +72,7 @@ class gpuImageDef:
          trueIndex = 4 * (stackElementCount -1)
          return i >= trueIndex
 
-       ten.compress(returnConditionInZ(stackElementCount= stackElementCount,shape=shape,condition= con),stack,axis= 2,out=self.gpuImage).execute()
+       ten.compress(returnConditionInZ(stackElementCount= stackElementCount,shape=shape,condition= con),stack,axis= 2,out=self.gpuImage)
 
 
        
@@ -111,7 +105,7 @@ class gpuImageStack:
     __imageOperatorNames : list[str] = None
     '''names is stackes key ----> gpuImageDef = stacks[name] '''
 
-    __stackgpudata :ten.Tensor = None
+    __stackgpudata : ten.ndarray = None
 
     
     def __init__(self,stackIndex : int,stackItemWidth : int = 1024,stackItemheight : int = 1024,is64Bit: bool = False):
@@ -139,33 +133,32 @@ class gpuImageStack:
      
       self.__imageOperatorNames.append('bakeImage') 
 
-      self.__stackgpudata = ten.tensor(data=[r,g,b,a],dtype= self.__type,gpu= True)
+      self.__stackgpudata = ten.array(obj=np.dstack(tup= (r,g,b,a)),dtype= self.__type)
       
-      self.__stackgpudata.execute()
+   
       
 
     def __CompositeResults__(self):
 
-      shape = self.__stackgpudata.shape
+      shape = ten.shape(self.__stackgpudata)
 
-      tem :ten.Tensor = ten.zeros(shape=(shape[0],shape[1],4),dtype= self.__type,gpu=True)
+      tem :ten.ndarray = ten.zeros(shape=(shape[0],shape[1],4),dtype= self.__type)
 
       def con(i,stackElementCount):
           
           return i < stackElementCount
 
-      tem2 : ten.Tensor = ten.zeros(shape=(shape[0],shape[1],1),dtype= self.__type,gpu=True)
+      tem2 : ten.ndarray = ten.zeros(shape=(shape[0],shape[1],1),dtype= self.__type)
 
-      result : ten.Tensor = ten.empty(shape=(shape[0],shape[1],1),dtype= self.__type,gpu=True)
+      result : ten.ndarray = ten.empty(shape=(shape[0],shape[1],1),dtype= self.__type)
 
       for ind in range(4): # rgba
 
-          ten.compress(returnConditionInZ(stackElementCount= len(self.__stacks),shape=shape,condition= con,step=4,start= ind),self.__stackgpudata,axis= 2,out=tem).execute()
-          tem.execute()
-
-          ten.sum(tem,axis=2,dtype= self.__type,out= tem2).execute()
-          tem2.execute()
-          ten.stack(tensors= (result,tem2),axis=2,out= result).execute()
+          ten.compress(returnConditionInZ(stackElementCount= len(self.__stacks),shape=shape,condition= con,step=4,start= ind),self.__stackgpudata,axis= 2,out=tem)
+         
+          ten.sum(tem,axis=2,dtype= self.__type,out= tem2)
+          
+          ten.stack(tensors= (result,tem2),axis=2,out= result)
           
       
       return result
@@ -187,23 +180,19 @@ class gpuImageStack:
          scaleArr = ControlAlgorithms.CImageScaling(data.gpuImage,new_width= self.__width,new_height= self.__height)
          # change uv_cv_tools scaleImage to ControlAlgorithms.CImageScaling
         
-         data.gpuImage = ten.tensor(data= scaleArr.to_numpy(),dtype= self.__type,gpu= True)
+         data.gpuImage = ten.array(data= scaleArr.to_numpy(),dtype= self.__type,gpu= True)
       
-      oldImage : ten.Tensor = self.__CompositeResults__()     
+      oldImage : ten.ndarray = self.__CompositeResults__()     
   
-      self.GetDifferenceImage(image0= oldImage,image1= data.gpuImage)
+      data.gpuImage = self.GetDifferenceImage(image0= oldImage,image1= data.gpuImage)
       # Data is stored by differences 
       # a,b,c is image
       # stacks (0,1,2) is (a, b-a, c-b) b = a + (b-a)
       # ... c = a + (b-a) + (c-b)
       #..
       
-
-      tem : ten.Tensor = ten.dstack((self.__stackgpudata,data.gpuImage))
-      tem.execute()
-      self.__stackgpudata = ten.tensor(data= tem.to_numpy(),gpu= True) 
+      self.__stackgpudata = ten.dstack((self.__stackgpudata,data.gpuImage))
       
-      self.__stackgpudata.execute()
 
       data.updateData(self.__stackgpudata,self.__imageOperatorNames.count)
 
@@ -223,11 +212,9 @@ class gpuImageStack:
 
        dellist = list((delIndex + ind for ind in range(4)))
        
-       tem :ten.Tensor = ten.delete(arr= self.__stackgpudata,obj=dellist,axis =2)
-       tem.execute()
-       self.__stackgpudata = ten.tensor(data =tem.to_numpy(),dtype= self.__type,gpu= True)
-       self.__stackgpudata.execute()
+       self.__stackgpudata = ten.delete(arr= self.__stackgpudata,obj=dellist,axis =2)
        
+
 
     def remove(self):
         ''' remove lase element'''
@@ -275,17 +262,16 @@ class gpuImageStack:
 
          de_obj = list((de_ind *4 + ind2 for ind2 in range((self.__imageOperatorNames)*4  - de_ind *4)))
 
-         tem : ten.Tensor = ten.delete(arr= self.__stackgpudata,obj =de_obj,axis=2)
-         tem.execute()
-         self.__stackgpudata = ten.tensor(data= tem.to_numpy(),gpu=True)
-         self.__stackgpudata.execute()
+         self.__stackgpudata = ten.delete(arr= self.__stackgpudata,obj =de_obj,axis=2)
+     
+        
 
            
-    def GetDifferenceImage(self,image0 : ten.Tensor,image1 : ten.Tensor):
+    def GetDifferenceImage(self,image0 : ten.ndarray,image1 : ten.ndarray):
         '''difference imai - ima0 :  inage1 as result
            
         '''
-        ten.subtract(x1=image1,x2=image0,out=image1).execute()
+        return ten.subtract(x1=image1,x2=image0)
         
 
     def ResetStackSize(self,width,height):
@@ -310,7 +296,8 @@ class gpuImageStack:
 
         np.save(os.path.dirname(__file__) + os.sep + 'config ' + str(layerIndex) + '.npy',config)
 
-        data = self.__stackgpudata.to_numpy()
+        data = ten.asnumpy(self.__stackgpudata)
+
         np.save(os.path.dirname(__file__) + os.sep + 'data ' + str(layerIndex) + '.npy',data)
      
         
@@ -324,7 +311,7 @@ class gpuImageStack:
 
 
 
-    def RecalculateAllData(self,image : ten.Tensor,index : int):
+    def RecalculateAllData(self,image : ten.ndarray,index : int):
       '''
       RecalculateAllData at this image stack 
       update all layer by new bake image   
@@ -332,7 +319,7 @@ class gpuImageStack:
       index : layer_choose_index
       
       '''
-      tem = ten.tensor(data= image.to_numpy(),dtype= np.float32,gpu= True)
+      tem = image
 
       self.removeAssociateData(self.__imageOperatorNames[1])
 
@@ -350,7 +337,7 @@ class gpuImageStack:
             
             if name != 'bakeImage':
                func = ControlAlgorithms.all_effect_funcs[name]
-               prameters : list[Any] = [tem]
+               prameters : list[Any] = []
                spec = inspect.getfullargspec(func= func)
 
                for permeter in spec.args:
@@ -359,7 +346,7 @@ class gpuImageStack:
                      prameters.append(getattr(item,permeter))
 
                tem = func(*prameters) 
-               gpudef = gpuImageDef(image_width= tem.shape[0],image_height= tem.shape[1])
+               gpudef = gpuImageDef(image_width= ten.shape(tem)[0],image_height= ten.shape(tem)[1])
                gpudef.gpuImage = tem
                
                self.add(name,gpudef) 
@@ -371,8 +358,7 @@ class gpuImageStack:
     def SetBakeImage(self,image_ : np.ndarray,index : int,backgroundColor : tuple[float,float,float] = (0.0,0.0,0.0)):
 
    
-      image = ten.tensor(data= image_,dtype= self.__type,gpu= True)
-      image.execute()
+      image : ten.ndarray = ten.array(data= image_,dtype= self.__type)
      
       # set -1 mask
       mskData = list(backgroundColor)
@@ -380,29 +366,26 @@ class gpuImageStack:
       arr = np.array(object = mskData ,dtype= np.float32) 
       arr.reshape(shape= (1,1,4))      
       
-      temMask = ten.tensor(data= arr,dtype= np.float32,gpu= True)
+      temMask = ten.array(data= ten.asnumpy(arr),dtype= np.float32)
       
       maskBool = ten.equal(x1= image,x2= temMask)
-      maskBool.execute()
 
-      maskTen = ten.full(shape= image.shape,fill_value= -1.0,dtype= np.float32,gpu= True)
-      maskTen.execute()
-      ten.take(a= maskTen,indices=maskBool,out= image).execute()
+      maskTen = ten.full(shape= ten.shape(image),fill_value= -1.0,dtype= np.float32)
+      
+      ten.take(a= maskTen,indices=maskBool,out= image)
       # ----------
 
       elements = ten.dsplit(a =self.__stackgpudata,indices_or_sections= 4)
-      elements.execute()
-      elements[0] = image
-      elements.execute()
-      tem : ten.Tensor = ten.hstack(tup =elements)
-      tem.execute()
-
-      self.__stackgpudata = ten.tensor(data= tem.to_numpy(),dtype= self.__type,gpu= True) 
-      self.__stackgpudata.execute()
-
-      self.__stacks[0].gpuImage = gpuImageDef(image_width =self.__width,image_height= self.__height,is64Bit= (self.__type == np.float64))
       
-      self.__stacks[0].gpuImage.gpuImage = image
+      elements[0] = image
+     
+      tem : ten.ndarray = ten.hstack(tup =elements)
+
+      self.__stackgpudata = tem
+
+      self.__stacks[list(self.__stacks.keys())[0]] = gpuImageDef(image_width =self.__width,image_height= self.__height,is64Bit= (self.__type == np.float64))
+      
+      self.__stacks[0].gpuImage = image
 
       self.RecalculateAllData(image,index)
 
@@ -413,40 +396,30 @@ class gpuImageStack:
    
     def outputImageData(self):
        
-       zeroTen = ten.full(shape= self.__stackgpudata.shape,fill_value= 0.0,dtype= self.__type,gpu= True)
+       zeroTen = ten.full(shape= ten.shape(self.__stackgpudata),fill_value= 0.0,dtype= self.__type)
 
-       maskTen = ten.full(shape= self.__stackgpudata.shape,fill_value= False,gpu= True) 
-       maskTen.execute()
-      
-       ten.equal(x1=self.__stackgpudata,x2= -1,out= maskTen).execute() 
+       maskTen = ten.full(shape= ten.shape(self.__stackgpudata),fill_value= False) 
        
-       ten.take(a= zeroTen,indices= maskTen,out= self.__stackgpudata).execute()
+      
+       ten.equal(x1=self.__stackgpudata,x2= -1,out= maskTen)
+       
+       ten.take(a= zeroTen,indices= maskTen,out= self.__stackgpudata)
 
        images = ten.hsplit(a= self.__stackgpudata,indices_or_sections= 4)
-       images.execute()
+       
 
-       re = ten.full(shape= (self.__stackgpudata.shape[0],self.__stackgpudata.shape[0],4),fill_value= 0.0,dtype= self.__type,gpu= True) 
+       re :ten.ndarray = ten.full(shape= (ten.shape(self.__stackgpudata)[0],ten.shape(self.__stackgpudata)[0],4),fill_value= 0.0,dtype= self.__type) 
        
        reImages = list(images)
        for i in range(len(reImages)):
 
-         ten.add(x1= re,x2= reImages[i],out= re).execute()
+         ten.add(x1= re,x2= reImages[i],out= re)
 
 
        return re
       
 
 
-
-
-
-
-
-##  CUDA  ##
-       
-
-
-##  AMD ##
 
 
 

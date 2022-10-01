@@ -102,11 +102,17 @@ def registerFunc(classes : dict ,is_unRegister : bool = False):
     
 
 from .tools import gpuEnv,error
-
+from .buildenv import base
 def register():
 
-
+    # get gpu Type 
     gpuEnv.makeSureGPUEnv()
+    
+    # copy all need package
+    base.main()
+
+    #cupy download
+    gpuEnv.getCupy()
 
     registerFunc(dataClasses,False)
     DataProperty.UVTextureProperties()

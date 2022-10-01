@@ -20,7 +20,7 @@ class UVTexture_OT_OpenGPUConsumption(bpy.types.Operator):
         out0 : str = "-/-"
         out1 : str = "0%"
 
-        if gpuEnv.NVorAmd:
+        if gpuEnv.NVAmdorOther:
       
           pynvml.nvmlInit()
 

@@ -219,7 +219,9 @@ class UITree_OT_createItem(bpy.types.Operator):
         config.float32 = outconfig.float32 
 
        
-        if gpuEnv.NVorAmd:
+        if gpuEnv.NVAmdorOther:
+
+            
                     # init CUDA context struct
                 image_stack_Struct[scene.uv_texture_list_index] = gpu_photo_stack.gpuImageStack(
                                                                      stackIndex= scene.uv_texture_list_index,                                                            
@@ -228,6 +230,8 @@ class UITree_OT_createItem(bpy.types.Operator):
                                                                      is64Bit= config.float32
 
                                                                   )
+
+                
         else:
                     # AMD context struct 
             pass
